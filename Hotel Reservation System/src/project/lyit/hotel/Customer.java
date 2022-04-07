@@ -28,8 +28,7 @@ public class Customer {
         return phone != null && phone.length() == 10 && phone.matches("^[0-9]*$");
     }
 	
-	public void addCustomer(int custNo, String fName, String lName, String addr, String phone, String email) {
-		
+	public void addCustomer(int custNo, String fName, String lName, String addr, String phone, String email) {	
 		conn = dbConnect.connectToDatabase();
 	 	String sql = "INSERT INTO customer VALUES (" + custNo + ", '"
 	 			+ fName + "', '" + lName + "', '" + addr + "', '" + phone + "', '" + email + "')";
@@ -179,5 +178,29 @@ public class Customer {
 			}
 		}
 		return details;
+	}
+
+	public ArrayList<String> getExistingDetails() {
+		ArrayList<String> existingDetails = new ArrayList<>();
+		conn = dbConnect.connectToDatabase();
+		String sql = "SELECT * FROM customer";
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while(rs.next()) {
+				existingDetails.add("Number: " + rs.getInt("CustomerNo") + " Name: " + rs.getString("FirstName")
+									+ " " + rs.getString("LastName"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return existingDetails;
 	}
 }

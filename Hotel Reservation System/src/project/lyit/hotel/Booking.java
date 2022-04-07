@@ -17,6 +17,28 @@ public class Booking {
 		dbConnect = new DatabaseConnector();
 	}
 
+	//THIS IS NEW!!!!!!!!!!!!!!!!!!!!!!!!!!
+	public void addBooking(int bookingNo, String checkInDate, String checkOutDate, int custNo, int roomNo) {
+		conn = dbConnect.connectToDatabase();
+		String sql = "INSERT INTO booking VALUES (" + bookingNo + ", '" + checkInDate  + "', '" +  checkOutDate +  "', "  
+													+ custNo + ", " + roomNo + ", false, false)";
+
+		try {
+			stmt = conn.createStatement();
+			stmt.executeUpdate(sql);
+			System.out.println("Booking ADDED!!!");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 	public ArrayList<String> getBookingAvailability(LocalDate checkDate, LocalDate checkoutDate, String type) {	
 		conn = dbConnect.connectToDatabase();
 		//ArrayList<Integer> existingNums = room.getExistingRooms();
@@ -38,7 +60,7 @@ public class Booking {
 			String sqlAvailable = "SELECT * FROM room WHERE RoomType= '" + type + "' AND Decommissioned = false";
 			rs = stmt.executeQuery(sqlAvailable);
 			while (rs.next()) {
-				availability.add("Room: " + rs.getInt("RoomNo") + ", Room Type: " + rs.getString("RoomType"));
+				availability.add("Room: " + rs.getInt("RoomNo") + " Room Type: " + rs.getString("RoomType"));
 			}
 
 			if (unavailableNums.size() > 0) {
@@ -67,15 +89,15 @@ public class Booking {
 		return availableToBook;
 	}
 	
-	public ArrayList<Integer> getExistingBookings() {
-		ArrayList<Integer> existingBookings = new ArrayList<>();
+	public ArrayList<String> getExistingBookings() {
+		ArrayList<String> existingBookings = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
 		String sql = "SELECT * FROM booking";
 		try {
 			stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(sql);
 			while(rs.next()) {
-				existingBookings.add(rs.getInt("BookingNo"));
+				existingBookings.add("Room No: " + rs.getInt("RoomNo") + ", Booking No: " + rs.getInt("BookingNo"));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

@@ -36,6 +36,7 @@ public class HotelApp extends Application {
 	private Room room;
 	private Customer customer;
 	private Extra extra;
+	private Booking booking;
 
 	//ROOM GRID FIELDS
 	private ComboBox<Integer> cbRoomNos; 
@@ -51,10 +52,14 @@ public class HotelApp extends Application {
 	private ComboBox<Integer> cbExtras;
 	private ComboBox<String> cbExtraType;
 	private ComboBox<Integer> cbQty;
+	private ComboBox<String> cbBooking;
 
 	//Booking 
 	private DatePicker checkInDate;
     private DatePicker checkOutDate;
+	private CheckBox chkCustomer;
+	private TextField txtBookingNo, txtCheckInDate, txtCheckOutDate, txtRoomDetails;
+	private ComboBox<String> cbCustomerOptions;
 	
 	@Override
 	public void start(Stage primaryStage){
@@ -151,7 +156,13 @@ public class HotelApp extends Application {
 		btMakeBooking = new Button("Book a Room");
 		cbAvailable = new ComboBox<>();
 
-		hbox.getChildren().addAll(cbAvailable, btMakeBooking);
+		chkCustomer = new CheckBox();
+
+		hbox.getChildren().addAll(cbAvailable, new Label("Existing Customer? "), chkCustomer, btMakeBooking);
+
+		btMakeBooking.setOnAction(e -> {
+			addABooking();
+		});
 
 		return hbox;
 	}
@@ -170,7 +181,76 @@ public class HotelApp extends Application {
 			cbAvailable.setValue(availableToBook.get(0));
 		} else {
 			cbAvailable.getItems().add("No Rooms Available!");
+			cbAvailable.setValue("No Rooms Available!");
 		}
+	}
+
+	public void addABooking() {
+		if (!(chkCustomer.isSelected())) {
+			addACustomer();
+		} 
+
+		if (!(cbAvailable.getValue().equals("No Rooms Available!"))) {
+			dialog = new Dialog<>();
+			dialog.setTitle("Making a Booking");
+			dialog.setHeaderText("Select customer to make the booking");
+			// Set the button types.
+			ButtonType btOk = new ButtonType("Ok", ButtonData.OK_DONE);
+			dialog.getDialogPane().getButtonTypes().addAll(btOk, ButtonType.CANCEL);
+
+			GridPane grid = getBookingGrid();
+			dialog.getDialogPane().setContent(grid);
+			dialog.showAndWait();
+
+			String[] roomDetails = cbAvailable.getValue().split(" ");
+			String[] custDetails = cbCustomerOptions.getValue().split(" ");
+
+			booking.addBooking(Integer.parseInt(txtBookingNo.getText()), txtCheckInDate.getText(), 
+								txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
+								Integer.parseInt(roomDetails[1]));
+		}
+	}
+
+	public GridPane getBookingGrid() {
+		GridPane bookingGrid = new GridPane();
+		bookingGrid.setHgap(10);
+		bookingGrid.setVgap(10);
+		bookingGrid.setPadding(new Insets(20, 150, 10, 10));
+		booking = new Booking();
+		customer = new Customer();
+
+		txtBookingNo = new TextField();
+		txtBookingNo.setText("" + booking.getNextNo());
+		txtBookingNo.setEditable(false);
+		
+		txtRoomDetails = new TextField();
+		txtRoomDetails.setText(cbAvailable.getValue());
+		txtRoomDetails.setEditable(false);
+
+		txtCheckInDate = new TextField();
+		txtCheckInDate.setText(checkInDate.getValue().toString());
+		txtCheckInDate.setEditable(false);
+
+		txtCheckOutDate = new TextField();
+		txtCheckOutDate.setText(checkOutDate.getValue().toString());
+		txtCheckOutDate.setEditable(false);
+
+		cbCustomerOptions = new ComboBox<>();
+		cbCustomerOptions.getItems().addAll(customer.getExistingDetails());
+		cbCustomerOptions.setValue(customer.getExistingDetails().get(0));
+
+		bookingGrid.add(new Label("Booking No: "), 0, 0);
+		bookingGrid.add(txtBookingNo, 1, 0);
+		bookingGrid.add(new Label("Room Details: "), 0, 1);
+		bookingGrid.add(txtRoomDetails, 1, 1);
+		bookingGrid.add(new Label("Check In Date: "), 0, 2);
+		bookingGrid.add(txtCheckInDate, 1, 2);
+		bookingGrid.add(new Label("Check Out Date: "), 0, 3);
+		bookingGrid.add(txtCheckOutDate, 1, 3);
+		bookingGrid.add(new Label("Select a Customer: "), 0, 4);
+		bookingGrid.add(cbCustomerOptions, 1, 4);
+
+		return bookingGrid;
 	}
 
 	//**** NEED TO SORT THE CANCEL BUTTON IN DIALOG ****/
@@ -296,6 +376,7 @@ public class HotelApp extends Application {
 		extraGrid.setVgap(10);
 		extraGrid.setPadding(new Insets(20, 150, 10, 10));
 		extra = new Extra();
+		booking = new Booking();
 		
 		//Using map to store key:value pairs of extra and cost and filling 
 		//combobox with the keys from map.
@@ -307,9 +388,9 @@ public class HotelApp extends Application {
 		cost = new TextField();
 		total = new TextField();
 
-		//******Need to change booking no to get available bookings******
-		bookingNo = new TextField();
-		bookingNo.setPromptText("Booking No");
+		//HERE IS CHANGES!!!!
+		cbBooking = new ComboBox<>();
+		cbBooking.getItems().addAll(booking.getExistingBookings());
 		//setting initial values
 		cbExtraType.setValue("Coffee");
 		cbQty.setValue(1);
@@ -338,8 +419,8 @@ public class HotelApp extends Application {
 		extraGrid.add(cost, 1, 3);
 		extraGrid.add(new Label("Total: "), 0, 4);
 		extraGrid.add(total, 1, 4);
-		extraGrid.add(new Label("Booking No: "), 0, 5);
-		extraGrid.add(bookingNo, 1, 5);
+		extraGrid.add(new Label("Booking: "), 0, 5);
+		extraGrid.add(cbBooking, 1, 5);
 
 		return extraGrid;
 	}
@@ -356,10 +437,12 @@ public class HotelApp extends Application {
 		dialog.getDialogPane().setContent(grid);
 		dialog.showAndWait();
 
+		String[] bookingNo = cbBooking.getValue().split(" ");
+
 		extra.addExtra(Integer.parseInt(extraNo.getText()), cbExtraType.getValue(), 
 						cbQty.getValue(), Double.parseDouble(cost.getText()), 
 						Double.parseDouble(total.getText()), 
-						Integer.parseInt(bookingNo.getText()));
+						Integer.parseInt(bookingNo[3]));
 	}
 	
 	//****NEED TO FIX CANCEL BUTTON****/
