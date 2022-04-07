@@ -23,6 +23,13 @@ public class HotelApp extends Application {
 	private Button btAdd, btEdit, btDelete;
 	private ToggleGroup group;
 
+	//RIGHT PANE
+	private GridPane rightPane;
+	private RadioButton rbIn, rbOut;
+	private ToggleGroup optGroup;
+	private ComboBox<String> checkInOutBox;
+
+
 	//CENTRE PANE
 	private VBox centrePane;
 
@@ -68,21 +75,74 @@ public class HotelApp extends Application {
 		leftPane = getLeftPane();
 		centrePane = getCenterPane();
 		bottomPane = getBottomPane();
+		rightPane = getRightPane();
 		
-		sceneLayout.setPrefSize(500,250);
+		sceneLayout.setPrefSize(700,250);
 		BorderPane.setMargin(leftPane, new Insets(15,15,15,15));
 		BorderPane.setMargin(centrePane, new Insets(15,15,15,15));
 		BorderPane.setMargin(bottomPane, new Insets(25,25,15,15));
+		BorderPane.setMargin(rightPane, new Insets(15,15,15,15));
 
 		sceneLayout.setTop(new Label("Hotel Reservation System"));
 		sceneLayout.setLeft(leftPane);
 		sceneLayout.setCenter(centrePane);
+		sceneLayout.setRight(rightPane);
 		sceneLayout.setBottom(bottomPane);
 		
 		scene = new Scene(sceneLayout);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Hotel Reservation System");
 		primaryStage.show();
+	}
+
+	private GridPane getRightPane() {
+		GridPane grid = new GridPane();
+		grid.setHgap(10);
+		grid.setVgap(10);
+		grid.setPadding(new Insets(20, 150, 10, 10));
+		booking = new Booking();
+
+		rbIn = new RadioButton("CheckIn");
+		rbOut = new RadioButton("CheckOut");
+		optGroup = new ToggleGroup();
+		rbIn.setToggleGroup(optGroup);
+		rbOut.setToggleGroup(optGroup);
+		rbIn.setSelected(true);
+
+		checkInOutBox = new ComboBox<String>();
+		checkInOutBox.getItems().addAll(booking.getExistingBookings());
+		checkInOutBox.setValue(booking.getExistingBookings().get(0));
+
+		rbIn.setOnAction(e -> {
+			handleRDChange();
+		});
+
+		rbOut.setOnAction(e -> {
+			handleRDChange();
+		});
+
+		grid.add(rbIn, 0, 0);
+		grid.add(rbOut, 1, 0);
+
+		grid.add(new Label("Bookings: "),0,1);
+		grid.add(checkInOutBox,1,1);
+
+		return grid;
+
+	}
+
+	private void handleRDChange() {
+		RadioButton selected = (RadioButton) optGroup.getSelectedToggle();
+		String selectedOpt = selected.getText();
+
+		switch(selectedOpt) {
+			case "CheckIn":
+				System.out.println("You are checking in!!");
+				break;
+			case "CheckOut":
+			System.out.println("You are checking out!!");
+			break;
+		}
 	}
 	
 	private VBox getLeftPane() {
@@ -171,7 +231,7 @@ public class HotelApp extends Application {
 		cbAvailable.getItems().clear();
 		LocalDate checkDate = checkInDate.getValue();
 		LocalDate checkoutDate = checkOutDate.getValue();
-		String roomType= cbRoomType.getValue();
+		String roomType = cbRoomType.getValue();
 		
 		Booking booking = new Booking();
 		ArrayList<String> availableToBook = booking.getBookingAvailability(checkDate, checkoutDate, roomType);

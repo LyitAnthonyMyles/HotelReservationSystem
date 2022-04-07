@@ -17,7 +17,6 @@ public class Booking {
 		dbConnect = new DatabaseConnector();
 	}
 
-	//THIS IS NEW!!!!!!!!!!!!!!!!!!!!!!!!!!
 	public void addBooking(int bookingNo, String checkInDate, String checkOutDate, int custNo, int roomNo) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "INSERT INTO booking VALUES (" + bookingNo + ", '" + checkInDate  + "', '" +  checkOutDate +  "', "  
@@ -111,6 +110,29 @@ public class Booking {
 		}
 		return existingBookings;
 	}
+
+	// public ArrayList<String> getBookingsToCheckIn() {
+	// 	ArrayList<String> existingBookings = new ArrayList<>();
+	// 	conn = dbConnect.connectToDatabase();
+	// 	String sql = "SELECT * FROM booking WHERE CheckIn = false AND CheckInDate = " + LocalDate.now();
+	// 	try {
+	// 		stmt = conn.createStatement();
+	// 		ResultSet rs = stmt.executeQuery(sql);
+	// 		while(rs.next()) {
+	// 			existingBookings.add("Room No: " + rs.getInt("RoomNo") + ", Booking No: " + rs.getInt("BookingNo"));
+	// 		}
+	// 	} catch (SQLException e) {
+	// 		e.printStackTrace();
+	// 	} finally {
+	// 		try {
+	// 			stmt.close();
+	// 			dbConnect.closeDatabaseConnection(conn);
+	// 		} catch (SQLException e) {
+	// 			e.printStackTrace();
+	// 		}
+	// 	}
+	// 	return existingBookings;
+	// }
 
 	public int getNextNo() {
 		conn = dbConnect.connectToDatabase();

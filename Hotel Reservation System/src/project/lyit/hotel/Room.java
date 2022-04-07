@@ -11,6 +11,7 @@ public class Room {
 	private DatabaseConnector dbConnect;
 	private Connection conn;
 	private Statement stmt;
+	//change this!!!!
 	private String[] roomType = {"Single", "Double", "Triple", "Family"};
 	
 	public Room() {
