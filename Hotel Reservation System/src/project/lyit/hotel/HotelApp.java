@@ -9,7 +9,9 @@ import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.*;
 
 public class HotelApp extends Application {
@@ -24,17 +26,12 @@ public class HotelApp extends Application {
 	private ToggleGroup group;
 
 	//RIGHT PANE
-	private GridPane rightPane;
+	private VBox rightPane;
 	private RadioButton rbIn, rbOut;
 	private ToggleGroup optGroup;
 	private ComboBox<String> checkInOutBox;
 
-
-	//CENTRE PANE
-	private VBox centrePane;
-
 	//BOTTOM PANE
-	private HBox bottomPane;
 	private ComboBox<String> cbAvailable;
 	private Button btMakeBooking;
 	
@@ -73,33 +70,34 @@ public class HotelApp extends Application {
 		
 		sceneLayout = new BorderPane();
 		leftPane = getLeftPane();
-		centrePane = getCenterPane();
-		bottomPane = getBottomPane();
 		rightPane = getRightPane();
 		
 		sceneLayout.setPrefSize(700,250);
 		BorderPane.setMargin(leftPane, new Insets(15,15,15,15));
-		BorderPane.setMargin(centrePane, new Insets(15,15,15,15));
-		BorderPane.setMargin(bottomPane, new Insets(25,25,15,15));
 		BorderPane.setMargin(rightPane, new Insets(15,15,15,15));
+		sceneLayout.setBackground(new Background(new BackgroundFill(Color.BURLYWOOD, CornerRadii.EMPTY, Insets.EMPTY)));
+		Image image = new Image(getClass().getResourceAsStream("hotelIcon.png"));
 
 		sceneLayout.setTop(new Label("Hotel Reservation System"));
 		sceneLayout.setLeft(leftPane);
-		sceneLayout.setCenter(centrePane);
 		sceneLayout.setRight(rightPane);
-		sceneLayout.setBottom(bottomPane);
 		
 		scene = new Scene(sceneLayout);
+		primaryStage.getIcons().add(image);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Hotel Reservation System");
 		primaryStage.show();
 	}
 
-	private GridPane getRightPane() {
-		GridPane grid = new GridPane();
-		grid.setHgap(10);
-		grid.setVgap(10);
-		grid.setPadding(new Insets(20, 150, 10, 10));
+	private VBox getRightPane() {
+		VBox vbox = new VBox(5);
+		vbox.getChildren().addAll(getFirstRow(), getSecondRow(), getBottomRow());
+		return vbox;
+	}
+
+	private HBox getBottomRow() {
+		HBox hbox = new HBox(5);
+		hbox.setPadding(new Insets(10, 20, 10, 10));
 		booking = new Booking();
 
 		rbIn = new RadioButton("CheckIn");
@@ -121,13 +119,9 @@ public class HotelApp extends Application {
 			handleRDChange();
 		});
 
-		grid.add(rbIn, 0, 0);
-		grid.add(rbOut, 1, 0);
+		hbox.getChildren().addAll(rbIn, rbOut, checkInOutBox);
 
-		grid.add(new Label("Bookings: "),0,1);
-		grid.add(checkInOutBox,1,1);
-
-		return grid;
+		return hbox;
 
 	}
 
@@ -182,10 +176,10 @@ public class HotelApp extends Application {
 		return vbox;
 	}
 
-	private VBox getCenterPane() {
+	private VBox getFirstRow() {
 		VBox vbox = new VBox(5);
-		//vbox.setAlignment(Pos.BASELINE_LEFT);
-		//hbox.setAlignment(Pos.BASELINE_LEFT);
+		HBox h1 = new HBox(5);
+		HBox h2 = new HBox(5);
 	
 		Button btCheck = new Button("Check Availability");
 		checkInDate = new DatePicker();
@@ -198,20 +192,41 @@ public class HotelApp extends Application {
 		cbRoomType.getItems().addAll(room.getRoomType());
 		cbRoomType.setValue("Single");
 		
-	  	vbox.getChildren().add(new Label("Check In Date:"));
-		vbox.getChildren().add(checkInDate);
-	   	vbox.getChildren().add(new Label("Check Out Date:"));
-		vbox.getChildren().add(checkOutDate);
-		vbox.getChildren().addAll(cbRoomType, btCheck);
+		h1.getChildren().add(new Label("Check In Date:"));
+		h1.getChildren().add(checkInDate);
+		h2.getChildren().add(new Label("Check Out Date:"));
+		h2.getChildren().add(checkOutDate);
+		h1.getChildren().add(cbRoomType);
+		h2.getChildren().add(btCheck);
 		
 		btCheck.setOnAction(e -> {
 			checkAvailibility();
 		});
 
+		checkInDate.setDayCellFactory(picker -> new DateCell() {
+	        public void updateItem(LocalDate date, boolean empty) {
+	            super.updateItem(date, empty);
+	            LocalDate today = LocalDate.now();
+
+	            setDisable(empty || date.compareTo(today) < 0 );
+	        }
+	    });
+
+		checkOutDate.setDayCellFactory(picker -> new DateCell() {
+	        public void updateItem(LocalDate date, boolean empty) {
+	            super.updateItem(date, empty);
+	            LocalDate today = LocalDate.now();
+
+	            setDisable(empty || date.compareTo(today) < 0 );
+	        }
+	    });
+
+		vbox.getChildren().addAll(h1, h2);
+
 		return vbox;
 	}
 
-	public HBox getBottomPane() {
+	public HBox getSecondRow() {
 		HBox hbox = new HBox(5);
 		btMakeBooking = new Button("Book a Room");
 		cbAvailable = new ComboBox<>();
