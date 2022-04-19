@@ -3,6 +3,7 @@ package project.lyit.hotel;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -83,18 +84,15 @@ public class Customer {
 		String sql = "DELETE FROM customer WHERE CustomerNo=" + custNo;
 		try {
 			stmt = conn.createStatement();
-			String[] details = new String[6];
-			ResultSet rs = stmt.executeQuery(sql);
-			while(rs.next()) {
-				details[0] = rs.getString("CustomerNo");
-				details[1] = rs.getString("FirstName");
-				details[2] = rs.getString("LastName");
-				details[3] = rs.getString("Address");
-				details[4] = rs.getString("Phone");
-				details[5] = rs.getString("Email");
-			}
 			stmt.executeUpdate(sql);
 			System.out.println("Customer DELETED!!!");
+		} catch(SQLIntegrityConstraintViolationException e) {
+			System.out.println("Cannot delete a room that is booked!");
+			Alert errorAlert = new Alert(AlertType.ERROR);
+	 		errorAlert.setTitle("Error");
+	 		errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+	 		errorAlert.setContentText("Cannot delete a customer that has a booking!");
+	 		errorAlert.showAndWait();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {

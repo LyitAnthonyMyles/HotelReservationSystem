@@ -3,12 +3,12 @@ package project.lyit.hotel;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 
 import javafx.application.*;
 import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
-import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -36,7 +36,7 @@ public class HotelApp extends Application {
 	private Button btMakeBooking;
 	
 	//DIALOG + DATABASE CONNECTOR
-	private Dialog<String> dialog;
+	private Dialog<ButtonType> dialog;
 	private Room room;
 	private Customer customer;
 	private Extra extra;
@@ -75,7 +75,7 @@ public class HotelApp extends Application {
 		sceneLayout.setPrefSize(700,250);
 		BorderPane.setMargin(leftPane, new Insets(15,15,15,15));
 		BorderPane.setMargin(rightPane, new Insets(15,15,15,15));
-		sceneLayout.setBackground(new Background(new BackgroundFill(Color.BURLYWOOD, CornerRadii.EMPTY, Insets.EMPTY)));
+		sceneLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGREEN, CornerRadii.EMPTY, Insets.EMPTY)));
 		Image image = new Image(getClass().getResourceAsStream("hotelIcon.png"));
 
 		sceneLayout.setTop(new Label("Hotel Reservation System"));
@@ -122,7 +122,6 @@ public class HotelApp extends Application {
 		hbox.getChildren().addAll(rbIn, rbOut, checkInOutBox);
 
 		return hbox;
-
 	}
 
 	private void handleRDChange() {
@@ -140,7 +139,6 @@ public class HotelApp extends Application {
 	}
 	
 	private VBox getLeftPane() {
-		
 		VBox vbox = new VBox(5);
 		HBox hbox = new HBox(5);
 		
@@ -187,9 +185,10 @@ public class HotelApp extends Application {
 		cbRoomType = new ComboBox<>();
 	 
 		room = new Room();
+		HashMap<String, Double> roomOptions = room.getRoomOpts();
 		checkInDate.setValue(LocalDate.now());
 		checkOutDate.setValue(checkInDate.getValue().plusDays(1));
-		cbRoomType.getItems().addAll(room.getRoomType());
+		cbRoomType.getItems().addAll(roomOptions.keySet());
 		cbRoomType.setValue("Single");
 		
 		h1.getChildren().add(new Label("Check In Date:"));
@@ -230,9 +229,7 @@ public class HotelApp extends Application {
 		HBox hbox = new HBox(5);
 		btMakeBooking = new Button("Book a Room");
 		cbAvailable = new ComboBox<>();
-
 		chkCustomer = new CheckBox();
-
 		hbox.getChildren().addAll(cbAvailable, new Label("Existing Customer? "), chkCustomer, btMakeBooking);
 
 		btMakeBooking.setOnAction(e -> {
@@ -269,20 +266,19 @@ public class HotelApp extends Application {
 			dialog = new Dialog<>();
 			dialog.setTitle("Making a Booking");
 			dialog.setHeaderText("Select customer to make the booking");
-			// Set the button types.
-			ButtonType btOk = new ButtonType("Ok", ButtonData.OK_DONE);
-			dialog.getDialogPane().getButtonTypes().addAll(btOk, ButtonType.CANCEL);
+			dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
 			GridPane grid = getBookingGrid();
 			dialog.getDialogPane().setContent(grid);
-			dialog.showAndWait();
 
-			String[] roomDetails = cbAvailable.getValue().split(" ");
-			String[] custDetails = cbCustomerOptions.getValue().split(" ");
-
-			booking.addBooking(Integer.parseInt(txtBookingNo.getText()), txtCheckInDate.getText(), 
-								txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
-								Integer.parseInt(roomDetails[1]));
+			Optional<ButtonType> buttonClicked = dialog.showAndWait();
+			if (buttonClicked.get() == ButtonType.OK) {
+				String[] roomDetails = cbAvailable.getValue().split(" ");
+				String[] custDetails = cbCustomerOptions.getValue().split(" ");
+				booking.addBooking(Integer.parseInt(txtBookingNo.getText()), txtCheckInDate.getText(), 
+									txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
+									Integer.parseInt(roomDetails[1]));
+			}
 		}
 	}
 
@@ -328,14 +324,11 @@ public class HotelApp extends Application {
 		return bookingGrid;
 	}
 
-	//**** NEED TO SORT THE CANCEL BUTTON IN DIALOG ****/
 	private void handleAdd() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Add Details");
 		dialog.setHeaderText("Enter Details to add to Database");
-		// Set the button types.
-		ButtonType btOk = new ButtonType("Ok", ButtonData.OK_DONE);
-		dialog.getDialogPane().getButtonTypes().addAll(btOk, ButtonType.CANCEL);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
 		String selectedOpt = selected.getText();
@@ -364,9 +357,10 @@ public class HotelApp extends Application {
 		room = new Room();
 
 		//COMBO BOXES - Gets avalable room using the method from the room class
+		HashMap<String, Double> roomOptions = room.getRoomOpts();
 		cbRoomNos = new ComboBox<>();
 		cbRoomType = new ComboBox<>();
-		cbRoomType.getItems().addAll(room.getRoomType());
+		cbRoomType.getItems().addAll(roomOptions.keySet());
 		cbDecomm = new ComboBox<>();
 		cbDecomm.getItems().addAll(true, false);
 
@@ -390,8 +384,10 @@ public class HotelApp extends Application {
 		cbDecomm.setValue(false);
 
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		room.addRoom(cbRoomNos.getValue(), cbRoomType.getValue(), cbDecomm.getValue());
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			room.addRoom(cbRoomNos.getValue(), cbRoomType.getValue(), cbDecomm.getValue());
+		}
 	}
 
 	private GridPane getCustomerGrid() {
@@ -439,10 +435,12 @@ public class HotelApp extends Application {
 		grid.add(custNo, 1, 0);
 
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-
-		customer.addCustomer(Integer.parseInt(custNo.getText()), first.getText(), last.getText(), 
+		
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			customer.addCustomer(Integer.parseInt(custNo.getText()), first.getText(), last.getText(), 
 								addr.getText(), phone.getText(), email.getText());
+		}
 	}
 
 	private GridPane getExtraGrid() {
@@ -463,7 +461,6 @@ public class HotelApp extends Application {
 		cost = new TextField();
 		total = new TextField();
 
-		//HERE IS CHANGES!!!!
 		cbBooking = new ComboBox<>();
 		cbBooking.getItems().addAll(booking.getExistingBookings());
 		//setting initial values
@@ -502,7 +499,6 @@ public class HotelApp extends Application {
 	
 	private void addAnExtra() {
 		GridPane grid = getExtraGrid();
-
 		extraNo = new TextField();
 		extraNo.setText("" + extra.getNextNo());
 		extraNo.setEditable(false);
@@ -510,23 +506,22 @@ public class HotelApp extends Application {
 		grid.add(extraNo, 1, 0);
 
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
 
-		String[] bookingNo = cbBooking.getValue().split(" ");
-
-		extra.addExtra(Integer.parseInt(extraNo.getText()), cbExtraType.getValue(), 
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			String[] bookingNo = cbBooking.getValue().split(" ");
+			extra.addExtra(Integer.parseInt(extraNo.getText()), cbExtraType.getValue(), 
 						cbQty.getValue(), Double.parseDouble(cost.getText()), 
 						Double.parseDouble(total.getText()), 
-						Integer.parseInt(bookingNo[3]));
+						Integer.parseInt(bookingNo[5]));
+		}
 	}
 	
-	//****NEED TO FIX CANCEL BUTTON****/
 	private void handleEdit() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Edit Details");
 		dialog.setHeaderText("Enter details for the item you want to edit.");
-		ButtonType btOk = new ButtonType("Ok", ButtonData.OK_DONE);
-		dialog.getDialogPane().getButtonTypes().addAll(btOk, ButtonType.CANCEL);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
 		String selectedOpt = selected.getText();
@@ -565,9 +560,10 @@ public class HotelApp extends Application {
 		});
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		room.editRoom(cbRoomNos.getValue(), cbRoomType.getValue(), cbDecomm.getValue());
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			room.editRoom(cbRoomNos.getValue(), cbRoomType.getValue(), cbDecomm.getValue());
+		}
 	}
 	
 	private void editACustomer() {
@@ -600,16 +596,18 @@ public class HotelApp extends Application {
 		grid.add(cbCustomers, 1, 0);
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		customer.editCustomer(cbCustomers.getValue(), first.getText(), last.getText(), 
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			customer.editCustomer(cbCustomers.getValue(), first.getText(), last.getText(), 
 								addr.getText(), phone.getText(), email.getText());
+		}
 	}
 		
 	private void editAnExtra() {
 		GridPane grid = getExtraGrid();
 		ArrayList<Integer> extras = extra.getExistingExtras();
 		cbExtras = new ComboBox<>();
+		bookingNo = new TextField();
 		cbExtras.getItems().addAll(extras);
 		cbExtras.setValue(extras.get(0));
 
@@ -650,20 +648,24 @@ public class HotelApp extends Application {
 			double newTotal = cbQty.getValue() * Double.parseDouble(cost.getText());
 			total.setText("" + newTotal);
 		});
+
+		grid.add(new Label("Booking: "), 0, 5);
+		grid.add(bookingNo, 1, 5);
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		extra.editExtra(cbExtras.getValue(), cbExtraType.getValue(), cbQty.getValue(), 
-						Double.parseDouble(cost.getText()), Double.parseDouble(total.getText()), Integer.parseInt(bookingNo.getText()));
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			extra.editExtra(cbExtras.getValue(), cbExtraType.getValue(), cbQty.getValue(), 
+						Double.parseDouble(cost.getText()), Double.parseDouble(total.getText()), 
+						Integer.parseInt(bookingNo.getText()));
+		}
 	}
 
 	private void handleDelete() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Delete an item");
-		dialog.setHeaderText("Select id to delete.");
-		ButtonType btOk = new ButtonType("Ok", ButtonData.OK_DONE);
-		dialog.getDialogPane().getButtonTypes().addAll(btOk, ButtonType.CANCEL);
+		dialog.setHeaderText("Select item to delete.");
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
 		String selectedOpt = selected.getText();
@@ -723,14 +725,14 @@ public class HotelApp extends Application {
 		grid.add(roomDecommed, 1, 2);
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		room.deleteRoom(cbRooms.getValue());
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			room.deleteRoom(cbRooms.getValue());
+		}
 	}
 	
 	private void deleteACustomer() {
 		GridPane grid = getCustomerGrid();
-
 		ArrayList<Integer> existingCustomers = customer.getExistingCustomers();
 		ComboBox<Integer> cbCustomers = new ComboBox<>();
 		cbCustomers.getItems().addAll(existingCustomers);
@@ -764,32 +766,73 @@ public class HotelApp extends Application {
 		grid.add(cbCustomers, 1, 0);
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		customer.deleteCustomer(cbCustomers.getValue());
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			customer.deleteCustomer(cbCustomers.getValue());
+		}
 	}
 	
-	//*NEED TO UPDATE THIS TO DISPLAY NON EDITABLE VALUES BEFORE DELETE */
 	private void deleteAnExtra() {
 		GridPane grid = new GridPane();
 		grid.setHgap(10);
 		grid.setVgap(10);
 		grid.setPadding(new Insets(20, 150, 10, 10));
 		extra = new Extra();
+		booking = new Booking();
+
+		ComboBox<Integer> cbExtras = new ComboBox<>();
+		TextField txtType = new TextField();
+		txtType.setEditable(false);
+		TextField txtQty = new TextField();
+		txtQty.setEditable(false);
+		TextField txtCost = new TextField();
+		txtCost.setEditable(false);
+		TextField txtTotal = new TextField();
+		txtTotal.setEditable(false);
+		TextField txtBookingInfo = new TextField();
+		txtBookingInfo.setEditable(false);
 
 		ArrayList<Integer> existingExtras = extra.getExistingExtras();
-		ComboBox<Integer> cbExtras = new ComboBox<>();
-		cbExtras.getItems().addAll(existingExtras);
+		if (existingExtras.size() == 0) {
+			//DO SOMETHING HERE
+		} else {
+			cbExtras.getItems().addAll(existingExtras);
+			cbExtras.setValue(existingExtras.get(0));
+			String[] extraDetails = extra.getExtraDetails(cbExtras.getValue());
+			txtType.setText(extraDetails[0]);
+			txtQty.setText(extraDetails[1]);
+			txtCost.setText(extraDetails[2]);
+			txtTotal.setText(extraDetails[3]);
+			txtBookingInfo.setText(booking.getBookingDetails(Integer.parseInt(extraDetails[4])));
+		}
 		
 		grid.add(new Label("Extra No: "), 0, 0);
 		grid.add(cbExtras, 1, 0);
+		grid.add(new Label("Type: "), 0, 1);
+		grid.add(txtType, 1, 1);
+		grid.add(new Label("Qty: "), 0, 2);
+		grid.add(txtQty, 1, 2);
+		grid.add(new Label("Cost: "), 0, 3);
+		grid.add(txtCost, 1, 3);
+		grid.add(new Label("Total: "), 0, 4);
+		grid.add(txtTotal, 1, 4);
+		grid.add(new Label("Booking: "), 0, 5);
+		grid.add(txtBookingInfo, 1, 5);
 
-		cbExtras.setValue(existingExtras.get(0));
+		cbExtras.setOnAction(e -> {
+			String[] extraDetails = extra.getExtraDetails(cbExtras.getValue());
+			txtType.setText(extraDetails[0]);
+			txtQty.setText(extraDetails[1]);
+			txtCost.setText(extraDetails[2]);
+			txtTotal.setText(extraDetails[3]);
+			txtBookingInfo.setText(booking.getBookingDetails(Integer.parseInt(extraDetails[4])));
+		});
 		
 		dialog.getDialogPane().setContent(grid);
-		dialog.showAndWait();
-		
-		extra.deleteExtra(cbExtras.getValue());
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			extra.deleteExtra(cbExtras.getValue());
+		}
 	}
 	
 	public static void main(String[] args) {	

@@ -156,4 +156,28 @@ public class Booking {
 		}
 		return ++lastNo;
 	}
+
+	public String getBookingDetails(int bookingNo) {
+		String details = "";
+		conn = dbConnect.connectToDatabase();
+		String sql = "SELECT * FROM booking WHERE BookingNo=" + bookingNo;
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while(rs.next()) {
+				details += "Booking: " + rs.getString("BookingNo") + ", Room Number: " 
+				+ rs.getInt("RoomNo");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return details;
+	}
 }

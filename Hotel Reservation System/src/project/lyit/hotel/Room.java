@@ -3,23 +3,31 @@ package project.lyit.hotel;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 
 public class Room {
 	
 	private DatabaseConnector dbConnect;
 	private Connection conn;
 	private Statement stmt;
-	//change this!!!!
-	private String[] roomType = {"Single", "Double", "Triple", "Family"};
+	private HashMap<String, Double> roomOpts = new HashMap<String, Double>();
 	
 	public Room() {
 		dbConnect = new DatabaseConnector();
+		roomOpts.put("Single", 50.0);
+		roomOpts.put("Double", 100.0);
+		roomOpts.put("Triple", 150.0);
+		roomOpts.put("Family", 200.0);
 	}
 
-	public String[] getRoomType() {
-		return roomType;
+	public HashMap<String, Double> getRoomOpts() {
+		return roomOpts;
 	}
 
 	public void addRoom(int roomNo, String roomType, boolean decomissioned ) {
@@ -69,6 +77,13 @@ public class Room {
 			stmt = conn.createStatement();
 			stmt.executeUpdate(sql);
 			System.out.println("Room DELETED!!!");
+		} catch(SQLIntegrityConstraintViolationException e) {
+			System.out.println("Cannot delete a room that is booked!");
+			Alert errorAlert = new Alert(AlertType.ERROR);
+	 		errorAlert.setTitle("Error");
+	 		errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+	 		errorAlert.setContentText("Cannot delete a room that is booked!");
+	 		errorAlert.showAndWait();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
