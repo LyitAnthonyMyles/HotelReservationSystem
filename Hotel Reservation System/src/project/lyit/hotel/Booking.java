@@ -17,6 +17,7 @@ public class Booking {
 		dbConnect = new DatabaseConnector();
 	}
 
+	//happy with this
 	public void addBooking(int bookingNo, String checkInDate, String checkOutDate, int custNo, int roomNo) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "INSERT INTO booking VALUES (" + bookingNo + ", '" + checkInDate  + "', '" +  checkOutDate +  "', "  
@@ -38,18 +39,39 @@ public class Booking {
 		}
 	}
 
+	//happy with this
+	public void checkIn(String no) {
+		conn = dbConnect.connectToDatabase();
+		String sql = "UPDATE booking SET CheckIn = true WHERE BookingNo = " + Integer.parseInt(no);
+		try {
+			stmt = conn.createStatement();
+			stmt.executeUpdate(sql);
+			System.out.println("Checked in the booking!!!");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	//happy with this
 	public ArrayList<String> getBookingAvailability(LocalDate checkDate, LocalDate checkoutDate, String type) {	
 		conn = dbConnect.connectToDatabase();
-		//ArrayList<Integer> existingNums = room.getExistingRooms();
 		ArrayList<Integer> unavailableNums = new ArrayList<>();
-		ArrayList<String> availableToBook = new ArrayList<>();
 		ArrayList<String> availability = new ArrayList<>();
 
-		String sqlUnavailable = "SELECT RoomNo from booking WHERE (CheckIn <= '" + checkDate.toString()
-					+ "' AND CheckOut >= '" + checkDate.toString() + "') AND (CheckIn <= '" + checkoutDate.toString()
-					+ "' AND CheckOut >= '" + checkoutDate.toString() + "')";
+		//SELECT * from booking WHERE (CheckInDate NOT BETWEEN '2022-05-07' AND '2022-05-10') 
+		//				AND (CheckOutDate NOT BETWEEN '2022-05-07' AND '2022-05-10');
+		//ISSUE HERE NEED TO FIX THIS! DOES NOT RETURN CORRECT UNAVAILABLE ROOMS
+		String sqlUnavailable = "SELECT * from booking WHERE (CheckInDate BETWEEN '" + checkDate.toString() 
+								+ "' AND '" + checkoutDate.toString() + "') OR (CheckOutDate BETWEEN '" 
+								+ checkDate.toString() + "' AND '" + checkoutDate.toString() + "')";
 		
-		//SELECT RoomNo from booking WHERE (CheckIn <= '2022/04/01' AND CheckOut >= '2022/04/01') AND (CheckIn <= '2022/04/03' AND CheckOut >= '2022/04/03')
 		try {
 			stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(sqlUnavailable);
@@ -64,17 +86,16 @@ public class Booking {
 
 			if (unavailableNums.size() > 0) {
 				for (int no : unavailableNums) {
-					for (String available : availability) {
-						if (!(available.contains("" + no))) {
-							availableToBook.add(available);
+					int counter = 0;
+					while (counter < availability.size()) {
+						if (availability.get(counter).contains(" " + no + " ")) {
+							availability.remove(counter);
+						} else {
+							counter++;
 						}
 					}
 				}
-			} else {
-				for (String available : availability) {
-					availableToBook.add(available);
-				}
-			}	
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -85,9 +106,10 @@ public class Booking {
 				e.printStackTrace();
 			}
 		}
-		return availableToBook;
+		return availability;
 	}
 	
+	//happy with this
 	public ArrayList<String> getExistingBookings() {
 		ArrayList<String> existingBookings = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
@@ -111,29 +133,56 @@ public class Booking {
 		return existingBookings;
 	}
 
-	// public ArrayList<String> getBookingsToCheckIn() {
-	// 	ArrayList<String> existingBookings = new ArrayList<>();
-	// 	conn = dbConnect.connectToDatabase();
-	// 	String sql = "SELECT * FROM booking WHERE CheckIn = false AND CheckInDate = " + LocalDate.now();
-	// 	try {
-	// 		stmt = conn.createStatement();
-	// 		ResultSet rs = stmt.executeQuery(sql);
-	// 		while(rs.next()) {
-	// 			existingBookings.add("Room No: " + rs.getInt("RoomNo") + ", Booking No: " + rs.getInt("BookingNo"));
-	// 		}
-	// 	} catch (SQLException e) {
-	// 		e.printStackTrace();
-	// 	} finally {
-	// 		try {
-	// 			stmt.close();
-	// 			dbConnect.closeDatabaseConnection(conn);
-	// 		} catch (SQLException e) {
-	// 			e.printStackTrace();
-	// 		}
-	// 	}
-	// 	return existingBookings;
-	// }
+	//happy with this
+	public ArrayList<String> getBookingsToCheckIn() {
+		ArrayList<String> existingBookings = new ArrayList<>();
+		conn = dbConnect.connectToDatabase();
+		String sql = "SELECT * FROM booking WHERE CheckIn = false AND CheckInDate = '" + LocalDate.now() + "'";
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while(rs.next()) {
+				existingBookings.add("Room No: " + rs.getInt("RoomNo") + " , Booking No: " + rs.getInt("BookingNo"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return existingBookings;
+	}
 
+	//fairly happy
+	public ArrayList<String> getBookingsToBill() {
+		ArrayList<String> bookingsToBill = new ArrayList<>();
+		conn = dbConnect.connectToDatabase();
+
+		String sql = "SELECT * FROM booking WHERE CheckIn = true AND CheckOutTotal = 0";
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while(rs.next()) {
+				bookingsToBill.add("Room No: " + rs.getInt("RoomNo") + ", Booking No: " + rs.getInt("BookingNo"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return bookingsToBill;
+	}
+
+	//happy with this
 	public int getNextNo() {
 		conn = dbConnect.connectToDatabase();
 		String sql = "SELECT * FROM booking";
@@ -157,6 +206,7 @@ public class Booking {
 		return ++lastNo;
 	}
 
+	//happy with this
 	public String getBookingDetails(int bookingNo) {
 		String details = "";
 		conn = dbConnect.connectToDatabase();

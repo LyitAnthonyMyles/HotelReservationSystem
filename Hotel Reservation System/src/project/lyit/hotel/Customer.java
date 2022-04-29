@@ -87,7 +87,6 @@ public class Customer {
 			stmt.executeUpdate(sql);
 			System.out.println("Customer DELETED!!!");
 		} catch(SQLIntegrityConstraintViolationException e) {
-			System.out.println("Cannot delete a room that is booked!");
 			Alert errorAlert = new Alert(AlertType.ERROR);
 	 		errorAlert.setTitle("Error");
 	 		errorAlert.setHeaderText("REQUEST NOT COMPLETE");
