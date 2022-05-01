@@ -30,6 +30,8 @@ public class Room {
 		return roomOpts;
 	}
 
+	//Adds a room to the database - all info is filled in or selected through controlled fields
+	//so no need for further validation
 	public void addRoom(int roomNo, String roomType, boolean decomissioned ) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "INSERT INTO room VALUES (" + roomNo + ", '" + roomType  + "', " +  decomissioned +  ")";
@@ -50,6 +52,7 @@ public class Room {
 		}
 	}
 	
+	//Edits a room in the database
 	public void editRoom(int roomNo, String roomType, boolean decomm) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "UPDATE room SET RoomType='" + roomType + "', Decommissioned= " + decomm
@@ -70,6 +73,7 @@ public class Room {
 		}
 	}
 
+	//Deletes a room in the database
 	public void deleteRoom(int roomNo) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "DELETE FROM room WHERE RoomNo=" + roomNo;
@@ -96,6 +100,7 @@ public class Room {
 		}
 	}
 
+	//Gets list of available rooms to add to the database between 1 and 30.
 	public ArrayList<Integer> getAvailableRooms() {
 		ArrayList<Integer> usedRooms = new ArrayList<>();
 		ArrayList<Integer> availableRooms = new ArrayList<>();;
@@ -125,6 +130,7 @@ public class Room {
 		return availableRooms;
 	}
 
+	//Gets a list of existing rooms in the database
 	public ArrayList<Integer> getExistingRooms() {
 		ArrayList<Integer> existingRooms = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
@@ -148,6 +154,7 @@ public class Room {
 		return existingRooms;
 	}
 
+	//Gets details for a specific room
 	public String[] getRoomDetails(int roomNo) {
 		String[] details = new String[2];
 		conn = dbConnect.connectToDatabase();
@@ -170,5 +177,10 @@ public class Room {
 			}
 		}
 		return details;
+	}
+
+	//Returns cost of room depending on type
+	public double getRoomCost(String type) {
+		return roomOpts.get(type);
 	}
 }

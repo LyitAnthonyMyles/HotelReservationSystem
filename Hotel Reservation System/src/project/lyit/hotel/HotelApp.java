@@ -1,10 +1,11 @@
 package project.lyit.hotel;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
-
 import javafx.application.*;
 import javafx.geometry.Insets;
 import javafx.scene.*;
@@ -19,6 +20,9 @@ public class HotelApp extends Application {
 	
 	private Scene scene;
 	private BorderPane sceneLayout;
+
+	//formatter for decimal places
+	private final DecimalFormat df = new DecimalFormat("0.00");
 	
 	//LEFT PANE
 	private VBox leftPane;
@@ -28,48 +32,53 @@ public class HotelApp extends Application {
 
 	//RIGHT PANE
 	private VBox rightPane;
+	private ComboBox<String> cbAvailable;
+	private Button btMakeBooking;
+	private DatePicker checkInDate;
+    private DatePicker checkOutDate;
+	private CheckBox chkCustomer;
 
 	//BOTTOM PANE
 	private HBox bottomPane;
-	private ComboBox<String> cbAvailable;
-	private Button btMakeBooking;
 	private ComboBox<String> checkInBox;
 	private Button btCheckIn, btGenerateBill;
 	private ComboBox<String> cbReadyForCheckOut;
 	
-	//DIALOG + DATABASE CONNECTOR
+	//DIALOG + OBJECTS NEEDED
 	private Dialog<ButtonType> dialog;
 	private Room room;
 	private Customer customer;
 	private Extra extra;
 	private Booking booking;
 
-	//ROOM GRID FIELDS
+	//ROOM
 	private ComboBox<Integer> cbRoomNos; 
 	private ComboBox<String> cbRoomType; 
 	private ComboBox<Boolean> cbDecomm;
 
-	//CUSTOMER GRID FIELDS
+	//CUSTOMER
 	private TextField custNo, first, last, addr, phone, email; 
 	private ComboBox<Integer> cbCustomers;
 
-	//EXTRA GRID FIELDS
+	//EXTRA
 	private TextField extraNo, cost, total, bookingNo;
 	private ComboBox<Integer> cbExtras;
 	private ComboBox<String> cbExtraType;
 	private ComboBox<Integer> cbQty;
 	private ComboBox<String> cbBooking;
 
-	//Booking 
-	private DatePicker checkInDate;
-    private DatePicker checkOutDate;
-	private CheckBox chkCustomer;
+	//BOOKING
 	private TextField txtBookingNo, txtCheckInDate, txtCheckOutDate, txtRoomDetails;
 	private ComboBox<String> cbCustomerOptions;
 	
 	@Override
 	public void start(Stage primaryStage){
-		
+
+		extra = new Extra();
+		booking = new Booking();
+		customer = new Customer();
+		room = new Room();
+
 		sceneLayout = new BorderPane();
 		leftPane = getLeftPane();
 		rightPane = getRightPane();
@@ -93,16 +102,17 @@ public class HotelApp extends Application {
 		primaryStage.show();
 	}
 
+	//gets the right pane
 	private VBox getRightPane() {
 		VBox vbox = new VBox(5);
 		vbox.getChildren().addAll(getFirstRow(), getSecondRow());
 		return vbox;
 	}
 
+	//gets the bottom pane
 	private HBox getBottomPane() {
 		HBox hbox = new HBox(5);
 		hbox.setPadding(new Insets(10, 20, 10, 10));
-		booking = new Booking();
 
 		btCheckIn = new Button("Check In");
 		btGenerateBill =  new Button("Generate Bill");
@@ -112,23 +122,147 @@ public class HotelApp extends Application {
 		updateCheckIns();
 		updateBookingsToBill();
 	
+		//handles checkin and error if no booking is selected
 		btCheckIn.setOnAction(e -> {
-			String[] checkInBoxSplit = checkInBox.getValue().split(" ");
-			booking.checkIn(checkInBoxSplit[6]);
-			updateCheckIns();
-			updateBookingsToBill();
+			if (!(checkInBox.getValue().equals("No check ins for today"))) {
+				String[] checkInBoxSplit = checkInBox.getValue().split(" ");
+				booking.checkIn(checkInBoxSplit[6]);
+				updateCheckIns();
+				updateBookingsToBill();
+			} else {
+				Alert errorAlert = new Alert(AlertType.INFORMATION);
+				errorAlert.setTitle("No booking selected for check in!");
+				errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+				errorAlert.setContentText("There is no booking selected to check in!");
+				errorAlert.showAndWait();
+			}
 		});
 
+		//handles generate bill and error if no booking is selected
 		btGenerateBill.setOnAction(e -> {
-			//NEED TO DO THIS
+			if (!(cbReadyForCheckOut.getValue().equals("No bookings to bill"))) {
+				String[] billToCheckOut = cbReadyForCheckOut.getValue().split(" ");
+				generateBill(Integer.parseInt(billToCheckOut[5]));
+				updateBookingsToBill();
+			} else {
+				Alert errorAlert = new Alert(AlertType.INFORMATION);
+				errorAlert.setTitle("No booking selected too bill!");
+				errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+				errorAlert.setContentText("There is no booking selected to bill!");
+				errorAlert.showAndWait();
+			}
 		});
-
 		hbox.getChildren().addAll(checkInBox, btCheckIn, cbReadyForCheckOut, btGenerateBill);
 
 		return hbox;
 	}
 
-	//happy with this
+	//Generates the bill in a dialog box with all the info, once ok is clicked the cost 
+	//is added to the database, if cancel is clicked the booking is still checked in
+	private void generateBill(int noToBill) {
+		//getting any info needed from booking and customer
+		String[] bookingInfo = booking.getBookingToBill(noToBill);
+		String[] customerInfo = customer.getCustomerDetails(Integer.parseInt(bookingInfo[2]));
+		ArrayList<String> extrasAdded = extra.getExtrasForBill(noToBill);
+
+		//declaring cost variables
+		double totalExtraCost = 0;
+		double overallCost = 0;
+
+		//getting dates of stay and calculates how many nights in total
+		LocalDate chkIn = LocalDate.parse(bookingInfo[0]);
+		LocalDate chkOut = LocalDate.parse(bookingInfo[1]);
+		Period period = Period.between(chkIn, chkOut);
+		int nights = Math.abs(period.getDays());
+
+		//room info
+		String[] roomInfo = room.getRoomDetails(Integer.parseInt(bookingInfo[3]));
+		double roomCost = room.getRoomCost(roomInfo[0]);
+		
+		//dialog creation begins
+		dialog = new Dialog<>();
+		dialog.setTitle("Hotel Reservation System Bill Total");
+		dialog.setHeaderText("Thank you for your stay :)");
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+		GridPane grid = new GridPane();
+		grid.setHgap(10);
+		grid.setVgap(10);
+		grid.setPadding(new Insets(20, 150, 10, 10));
+
+		//TEXTFIELDS!
+		TextField txtBooking = new TextField();
+		txtBooking.setText("" + noToBill);
+		txtBooking.setEditable(false);
+
+		TextField txtCustomer = new TextField();
+		txtCustomer.setText("" + customerInfo[0] + " " + customerInfo[1]);
+		txtCustomer.setEditable(false);
+
+		TextField nightsStayed = new TextField();
+		nightsStayed.setText("" + nights);
+		nightsStayed.setEditable(false);
+
+		TextField txtType = new TextField();
+		txtType.setText("" + roomInfo[0]);
+		txtType.setEditable(false);
+
+		TextField txtCostPerNight = new TextField();
+		txtCostPerNight.setText("€" + df.format(roomCost));
+		txtCostPerNight.setEditable(false);
+
+		TextField txtTotalForRoom = new TextField();
+		txtTotalForRoom.setText("€" + df.format(nights * roomCost));
+		txtTotalForRoom.setEditable(false);
+
+		//Adding to the grid
+		grid.add(new Label("Booking No: "), 0, 0);
+		grid.add(txtBooking, 1, 0);
+		grid.add(new Label("Customer Name: "), 0, 1);
+		grid.add(txtCustomer, 1, 1);
+		grid.add(new Label("Nights Stayed: "), 0, 2);
+		grid.add(nightsStayed, 1, 2);
+		grid.add(new Label(roomInfo[0] + " Room Cost Per Night: "), 0, 3);
+		grid.add(txtCostPerNight, 1, 3);
+		grid.add(new Label("Total for " + nights + " nights: "), 0, 4);
+		grid.add(txtTotalForRoom, 1, 4);
+		
+		//Checks if there are any extras present for the booking and if so adds them
+		//to the grid
+		if (extrasAdded.size() > 0) {
+			totalExtraCost = extra.getExtraCostForBill(noToBill);
+			TextArea taExtras = new TextArea();
+			String list = "";
+			for (String item : extrasAdded) {
+				list += item + "\n";
+			}
+			taExtras.setText(list);
+			taExtras.setEditable(false);
+			taExtras.setPrefColumnCount(20);
+			taExtras.setPrefRowCount(4);
+			grid.add(new Label("Extras: "), 0, 5);
+			grid.add(taExtras, 1, 5);
+			grid.add(new Label("Extra Total: "), 0, 6);
+			grid.add(new TextField("€" + df.format(totalExtraCost)), 1, 6);
+		}
+
+		//Adds overall cost to the grid
+		overallCost = (nights * roomCost) + totalExtraCost;
+		TextField txtOverallTotal = new TextField();
+		txtOverallTotal.setText("€" + df.format(overallCost));
+
+		grid.add(new Label("Total Cost of Stay: "), 0, 7);
+		grid.add(txtOverallTotal, 1, 7);
+
+		//displays dialog and charges the bill if ok is clicked
+		dialog.getDialogPane().setContent(grid);
+		Optional<ButtonType> buttonClicked = dialog.showAndWait();
+		if (buttonClicked.get() == ButtonType.OK) {
+			booking.chargeBill(noToBill, overallCost);
+		}
+	}
+
+	//Updates the check in combo box in the bottom pane
 	private void updateCheckIns() {
 		checkInBox.getItems().clear();
 		ArrayList<String> newCheckIns = booking.getBookingsToCheckIn();
@@ -141,6 +275,7 @@ public class HotelApp extends Application {
 		}
 	}
 
+	//Updates the check outs combo box in the bottom pane
 	private void updateBookingsToBill() {
 		cbReadyForCheckOut.getItems().clear();
 		ArrayList<String> availableToBill = booking.getBookingsToBill();
@@ -153,7 +288,7 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//gets the left pane
 	private VBox getLeftPane() {
 		VBox vbox = new VBox(5);
 		HBox hbox = new HBox(5);
@@ -190,7 +325,7 @@ public class HotelApp extends Application {
 		return vbox;
 	}
 
-	//happy with this
+	//gets the first row of the right pane
 	private VBox getFirstRow() {
 		VBox vbox = new VBox(5);
 		HBox h1 = new HBox(5);
@@ -201,7 +336,6 @@ public class HotelApp extends Application {
 		checkOutDate = new DatePicker();
 		cbRoomType = new ComboBox<>();
 	 
-		room = new Room();
 		HashMap<String, Double> roomOptions = room.getRoomOpts();
 		checkInDate.setValue(LocalDate.now());
 		checkOutDate.setValue(checkInDate.getValue().plusDays(1));
@@ -237,12 +371,26 @@ public class HotelApp extends Application {
 	        }
 	    });
 
+		//changes check out date picker to prevent check out before the check in date
+		checkInDate.setOnAction(e -> {
+			LocalDate chkInDate = checkInDate.getValue();
+			checkOutDate.setValue(chkInDate.plusDays(1));
+
+			checkOutDate.setDayCellFactory(picker -> new DateCell() {
+				public void updateItem(LocalDate date, boolean empty) {
+					super.updateItem(date, empty);
+					
+					setDisable(empty || date.compareTo(chkInDate.plusDays(1)) < 0 );
+					
+				}
+			});
+		});
 		vbox.getChildren().addAll(h1, h2);
 
 		return vbox;
 	}
 
-	//happy with this
+	//gets the second row of the right pane
 	public HBox getSecondRow() {
 		HBox hbox = new HBox(5);
 		btMakeBooking = new Button("Book a Room");
@@ -263,14 +411,13 @@ public class HotelApp extends Application {
 		return hbox;
 	}
 	
-	//fairly happy
+	//Gets the available room to book on a specified date and type
 	public void checkAvailibility() {
 		cbAvailable.getItems().clear();
 		LocalDate checkDate = checkInDate.getValue();
 		LocalDate checkoutDate = checkOutDate.getValue();
 		String roomType = cbRoomType.getValue();
 		
-		booking = new Booking();
 		ArrayList<String> availableToBook = booking.getBookingAvailability(checkDate, checkoutDate, roomType);
 		if (availableToBook.size() > 0) {
 			cbAvailable.getItems().addAll(availableToBook);
@@ -281,13 +428,21 @@ public class HotelApp extends Application {
 		}
 	}
 
-	//happy with this
+	//Checks a room is actually selected to book, then checks for an existing customer,
+	//if not an existing customer the the add a customer dialog box is displayed otherwise
+	//booking dialog is displayed and you can select the customer from a combo box of 
+	//available customers
 	public void addABooking() {
-		if (!(chkCustomer.isSelected())) {
-			addACustomer();
-		} 
+		if (!(cbAvailable.getValue().equals("No Rooms Available!")) 
+			&& !(cbAvailable.getValue().equals("Check Availability..."))) {
 
-		if (!(cbAvailable.getValue().equals("No Rooms Available!"))) {
+			if (!(chkCustomer.isSelected())) {
+				dialog = new Dialog<>();
+				dialog.setTitle("Add Details");
+				dialog.setHeaderText("Add customer details before booking.");
+				dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+				addACustomer();
+			} 
 			dialog = new Dialog<>();
 			dialog.setTitle("Making a Booking");
 			dialog.setHeaderText("Select customer to make the booking");
@@ -296,6 +451,7 @@ public class HotelApp extends Application {
 			GridPane grid = getBookingGrid();
 			dialog.getDialogPane().setContent(grid);
 
+			//Booking only added if ok is clicked
 			Optional<ButtonType> buttonClicked = dialog.showAndWait();
 			if (buttonClicked.get() == ButtonType.OK) {
 				String[] roomDetails = cbAvailable.getValue().split(" ");
@@ -304,17 +460,21 @@ public class HotelApp extends Application {
 									txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
 									Integer.parseInt(roomDetails[1]));
 			}
+		} else {
+			Alert errorAlert = new Alert(AlertType.INFORMATION);
+	 		errorAlert.setTitle("No Room Selected To Book!");
+	 		errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+	 		errorAlert.setContentText("There is no room selected to book!");
+	 		errorAlert.showAndWait();
 		}
 	}
 
-	//happy with this
+	//gets a grid for making a booking which can be added to the dialog box
 	public GridPane getBookingGrid() {
 		GridPane bookingGrid = new GridPane();
 		bookingGrid.setHgap(10);
 		bookingGrid.setVgap(10);
 		bookingGrid.setPadding(new Insets(20, 150, 10, 10));
-		booking = new Booking();
-		customer = new Customer();
 
 		txtBookingNo = new TextField();
 		txtBookingNo.setText("" + booking.getNextNo());
@@ -350,11 +510,11 @@ public class HotelApp extends Application {
 		return bookingGrid;
 	}
 
-	//happy with this
+	//When the add button is clicked in the left pane this function determines which
+	//radio is selected and acts accordingly
 	private void handleAdd() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Add Details");
-		dialog.setHeaderText("Enter Details to add to Database");
 		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
@@ -362,27 +522,26 @@ public class HotelApp extends Application {
 		
 		switch (selectedOpt) {
 		case "Room":
-			System.out.println("You choose room!!");
+			dialog.setHeaderText("Enter Room Details to add to Database");
 			addARoom();
 			break;
 		case "Customer":
-			System.out.println("You choose customer!!");
+			dialog.setHeaderText("Enter Customer Details to add to Database");
 			addACustomer();
 			break;
 		case "Extra":
-			System.out.println("You choose extra!!");
+			dialog.setHeaderText("Enter Extra Details to add to Database");
 			addAnExtra();
 			break;
 		}
 	}
 
-	//happy with this
+	//gets a room grid which can be added to the dialog box
 	private GridPane getRoomGrid() {
 		GridPane roomGrid = new GridPane();
 		roomGrid.setHgap(10);
 		roomGrid.setVgap(10);
 		roomGrid.setPadding(new Insets(20, 150, 10, 10));
-		room = new Room();
 
 		//COMBO BOXES - Gets avalable room using the method from the room class
 		HashMap<String, Double> roomOptions = room.getRoomOpts();
@@ -402,7 +561,7 @@ public class HotelApp extends Application {
 		return roomGrid;
 	}
 	
-	//happy with this
+	//gets the values to add the room and calls the addRoom method from the room class
 	private void addARoom() {
 		GridPane grid = getRoomGrid();
 
@@ -419,25 +578,24 @@ public class HotelApp extends Application {
 		}
 	}
 
-	//happy with this
+	//gets the cusomter grid which can be added to the combobox
 	private GridPane getCustomerGrid() {
 		GridPane custGrid = new GridPane();
 		custGrid.setHgap(10);
 		custGrid.setVgap(10);
 		custGrid.setPadding(new Insets(20, 150, 10, 10));
-		customer = new Customer();
 		
 		//TEXT FIELDS
 		first = new TextField();
-		first.setPromptText("First Name");
+		first.setPromptText("'Jane'");
 		last = new TextField();
-		last.setPromptText("Last Name");
+		last.setPromptText("'Doe'");
 		addr = new TextField();
-		addr.setPromptText("Address");
+		addr.setPromptText("'Donegal'");
 		phone = new TextField();
-		phone.setPromptText("Phone");
+		phone.setPromptText("'0896548895'");
 		email = new TextField();
-		email.setPromptText("Email");
+		email.setPromptText("'janedoe99@hotmail.com'");
 		
 		custGrid.add(new Label("First Name: "), 0, 1);
 		custGrid.add(first, 1, 1);
@@ -453,7 +611,8 @@ public class HotelApp extends Application {
 		return custGrid;
 	}
 	
-	//happy with this
+	//gets the values from the customer dialog and calls the addCustomer method
+	//from the customer class
 	private void addACustomer() {
 		GridPane grid = getCustomerGrid();
 		//Text field set to uneditable and method used from the customer class to get the
@@ -474,13 +633,12 @@ public class HotelApp extends Application {
 		}
 	}
 
-	//happy with this
+	//gets a grid for extras which can be added to the dialog box
 	private GridPane getExtraGrid() {
 		GridPane extraGrid = new GridPane();
 		extraGrid.setHgap(10);
 		extraGrid.setVgap(10);
 		extraGrid.setPadding(new Insets(20, 150, 10, 10));
-		extra = new Extra();
 		
 		//Using map to store key:value pairs of extra and cost and filling 
 		//combobox with the keys from map.
@@ -488,7 +646,7 @@ public class HotelApp extends Application {
 		cbExtraType = new ComboBox<>();
 		cbExtraType.getItems().addAll(extras.keySet());
 		cbQty = new ComboBox<>();
-		cbQty.getItems().addAll(1, 2, 3, 4, 5);
+		cbQty.getItems().addAll(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 		cost = new TextField();
 		total = new TextField();
 
@@ -501,12 +659,16 @@ public class HotelApp extends Application {
 		total.setText("" + totalAmt);
 		total.setEditable(false);
 
+		//event handles when the type is changed so that all values associated
+		//are also changed
 		cbExtraType.setOnAction(e -> {
 			cost.setText("" + extras.get(cbExtraType.getValue()));
 			double newTotal = cbQty.getValue() * extras.get(cbExtraType.getValue());
 			total.setText("" + newTotal);
 		});
 
+		//event handles when the qty is changed so that all values associated
+		//are also changed
 		cbQty.setOnAction(e -> {
 			double newTotal = cbQty.getValue() * extras.get(cbExtraType.getValue());
 			total.setText("" + newTotal);
@@ -524,18 +686,19 @@ public class HotelApp extends Application {
 		return extraGrid;
 	}
 	
-	//happy with this
+	//Addds any extra fields needed to the grid and gets bookings that are currently checked
+	//in to choose from. displays the dialog and passes the values as parameters to the addExtra
+	//method in the extra class
 	private void addAnExtra() {
-		extra = new Extra();
-		booking = new Booking();
-		ArrayList<String> bookings = booking.getExistingBookings();
+		ArrayList<String> bookings = booking.getBookingsToBill();
 		if (bookings.size() > 0) {
 			GridPane grid = getExtraGrid();
 			extraNo = new TextField();
 			extraNo.setText("" + extra.getNextNo());
 			extraNo.setEditable(false);
 			cbBooking = new ComboBox<>();
-			cbBooking.getItems().addAll(booking.getExistingBookings());
+			cbBooking.getItems().addAll(bookings);
+			cbBooking.setValue(bookings.get(0));
 
 			grid.add(new Label("Extra No: "), 0, 0);
 			grid.add(extraNo, 1, 0);
@@ -552,6 +715,8 @@ public class HotelApp extends Application {
 							Double.parseDouble(total.getText()), 
 							Integer.parseInt(bookingNo[5]));
 			}
+		//If there are no bookings in which to add extras to then a warning will display and
+		//there will be no dialog
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No bookings!");
@@ -561,11 +726,11 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//Once the edit button is clicked in the left pane, this method is called and 
+	//determines which radio button is selected and acts accordingly
 	private void handleEdit() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Edit Details");
-		dialog.setHeaderText("Enter details for the item you want to edit.");
 		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
@@ -573,23 +738,23 @@ public class HotelApp extends Application {
 		
 		switch (selectedOpt) {
 		case "Room":
-			System.out.println("You choose room!!");
+			dialog.setHeaderText("Enter detail changes for the room you wish to edit.");
 			editARoom();
 			break;
 		case "Customer":
-			System.out.println("You choose customer!!");
+			dialog.setHeaderText("Enter detail changes for the customer you wish to edit.");
 			editACustomer();
 			break;
 		case "Extra":
-			System.out.println("You choose extra!!");
+			dialog.setHeaderText("Enter detail changes for the extra you wish to edit.");
 			editAnExtra();
 			break;
 		}
 	}
 	
-	//happy with this
+	//Brings up the edit a room dialog box and passes the values as parameters
+	//once the ok button is clicked
 	private void editARoom() {
-		room = new Room();
 		ArrayList<Integer> existingRooms = room.getExistingRooms();
 		if (existingRooms.size() > 0) {
 			GridPane grid = getRoomGrid();
@@ -612,6 +777,7 @@ public class HotelApp extends Application {
 			if (buttonClicked.get() == ButtonType.OK) {
 				room.editRoom(cbRoomNos.getValue(), cbRoomType.getValue(), cbDecomm.getValue());
 			}
+		//Dialog will not display if there are no existing rooms to edit and a warning will appear
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No rooms!");
@@ -621,9 +787,9 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//Brings up the edit a customer dialog box and passes the values as parameters
+	//once the ok button is clicked
 	private void editACustomer() {
-		customer = new Customer();
 		ArrayList<Integer> customersNos = customer.getExistingCustomers();
 		if (customersNos.size() > 0) {
 			GridPane grid = getCustomerGrid();
@@ -659,6 +825,7 @@ public class HotelApp extends Application {
 				customer.editCustomer(cbCustomers.getValue(), first.getText(), last.getText(), 
 									addr.getText(), phone.getText(), email.getText());
 			}
+		//Dialog will not display if there are no existing rooms to edit and a warning will appear
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No customers!");
@@ -668,9 +835,9 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//Brings up the edit a customer dialog box and passes the values as parameters
+	//once the ok button is clicked
 	private void editAnExtra() {
-		extra = new Extra();
 		ArrayList<Integer> extras = extra.getExistingExtras();
 		if(extras.size() > 0) {
 			GridPane grid = getExtraGrid();
@@ -727,6 +894,7 @@ public class HotelApp extends Application {
 							Double.parseDouble(cost.getText()), Double.parseDouble(total.getText()), 
 							Integer.parseInt(bookingNo.getText()));
 			}
+		//Dialog will not display if there are no existing rooms to edit and a warning will appear
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No extras!");
@@ -736,11 +904,11 @@ public class HotelApp extends Application {
 		}
 	}
 
-	//happy with this
+	//When the delete button is clicked in the left pane this method is called and 
+	//determines which radio button is selected and acts accordingly
 	private void handleDelete() {
 		dialog = new Dialog<>();
 		dialog.setTitle("Delete an item");
-		dialog.setHeaderText("Select item to delete.");
 		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		
 		RadioButton selected = (RadioButton) group.getSelectedToggle();
@@ -748,23 +916,23 @@ public class HotelApp extends Application {
 		
 		switch (selectedOpt) {
 		case "Room":
-			System.out.println("You choose room!!");
+			dialog.setHeaderText("Select the room you wish to delete.");
 			deleteARoom();
 			break;
 		case "Customer":
-			System.out.println("You choose customer!!");
+			dialog.setHeaderText("Select the customer you wish to delete.");
 			deleteACustomer();
 			break;
 		case "Extra":
-			System.out.println("You choose extra!!");
+			dialog.setHeaderText("Select the extra you wish to delete.");
 			deleteAnExtra();
 			break;
 		}
 	}
 	
-	//happy with this
+	//Brings up the delete a room dialog box and calls the delete room method from the room 
+	//class with the roomNo passed as a parameter
 	private void deleteARoom() {
-		room = new Room();
 		ArrayList<Integer> existingRooms = room.getExistingRooms();
 		if (existingRooms.size() > 0) {
 			GridPane grid = new GridPane();
@@ -787,12 +955,11 @@ public class HotelApp extends Application {
 			roomDecommed.setText("" + Boolean.parseBoolean(details[1]));
 			roomDecommed.setEditable(false);
 
+			//Changes values based on combo box selection
 			cbRooms.setOnAction(e -> {
 				String[] detailsChanged = room.getRoomDetails(cbRooms.getValue());
 				roomType.setText(detailsChanged[0]);
-				roomType.setEditable(false);
 				roomDecommed.setText("" + Boolean.parseBoolean(detailsChanged[1]));
-				roomDecommed.setEditable(false);
 			});
 
 			grid.add(new Label("Room No: "), 0, 0);
@@ -807,6 +974,7 @@ public class HotelApp extends Application {
 			if (buttonClicked.get() == ButtonType.OK) {
 				room.deleteRoom(cbRooms.getValue());
 			}
+		//Dialog will not display if there are no rooms to delete
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No rooms!");
@@ -816,9 +984,9 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//Brings up the delete a customer dialog box and calls the delete customer method from the customer
+	//class with the customerNo passed as a parameter
 	private void deleteACustomer() {
-		customer = new Customer();
 		ArrayList<Integer> existingCustomers = customer.getExistingCustomers();
 		if (existingCustomers.size() > 0) {
 			GridPane grid = getCustomerGrid();
@@ -858,6 +1026,7 @@ public class HotelApp extends Application {
 			if (buttonClicked.get() == ButtonType.OK) {
 				customer.deleteCustomer(cbCustomers.getValue());
 			}
+		//Dialog will not display if there are no customers to delete
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No customers!");
@@ -867,17 +1036,15 @@ public class HotelApp extends Application {
 		}
 	}
 	
-	//happy with this
+	//Brings up the delete an extra dialog box and calls the delete extra method from the extra
+	//class with the extraNo passed as a parameter
 	private void deleteAnExtra() {
-		extra = new Extra();
 		ArrayList<Integer> existingExtras = extra.getExistingExtras();
 		if (existingExtras.size() > 0) {
 			GridPane grid = new GridPane();
 			grid.setHgap(10);
 			grid.setVgap(10);
 			grid.setPadding(new Insets(20, 150, 10, 10));
-			// extra = new Extra();
-			// booking = new Booking();
 			ComboBox<Integer> cbExtras = new ComboBox<>();
 			TextField txtType = new TextField();
 			txtType.setEditable(false);
@@ -926,6 +1093,7 @@ public class HotelApp extends Application {
 			if (buttonClicked.get() == ButtonType.OK) {
 				extra.deleteExtra(cbExtras.getValue());
 			}
+		//Dialog will not display if there are no customers to delete
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
 	 		errorAlert.setTitle("No extras!");

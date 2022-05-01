@@ -17,7 +17,8 @@ public class Booking {
 		dbConnect = new DatabaseConnector();
 	}
 
-	//happy with this
+	//Adds a booking to the database - all info is filled in or selected through controlled fields
+	//so no need for further validation
 	public void addBooking(int bookingNo, String checkInDate, String checkOutDate, int custNo, int roomNo) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "INSERT INTO booking VALUES (" + bookingNo + ", '" + checkInDate  + "', '" +  checkOutDate +  "', "  
@@ -39,7 +40,7 @@ public class Booking {
 		}
 	}
 
-	//happy with this
+	//Checks in a booking by setting value to true. 
 	public void checkIn(String no) {
 		conn = dbConnect.connectToDatabase();
 		String sql = "UPDATE booking SET CheckIn = true WHERE BookingNo = " + Integer.parseInt(no);
@@ -59,15 +60,14 @@ public class Booking {
 		}
 	}
 
-	//happy with this
+	//Gets a list of rooms available to book by first getting a list of unavailable room numbers 
+	//on the specified dates, then gets all rooms available of the specified type and removes any
+	//room numbers included in the unavailable list.
 	public ArrayList<String> getBookingAvailability(LocalDate checkDate, LocalDate checkoutDate, String type) {	
 		conn = dbConnect.connectToDatabase();
 		ArrayList<Integer> unavailableNums = new ArrayList<>();
 		ArrayList<String> availability = new ArrayList<>();
 
-		//SELECT * from booking WHERE (CheckInDate NOT BETWEEN '2022-05-07' AND '2022-05-10') 
-		//				AND (CheckOutDate NOT BETWEEN '2022-05-07' AND '2022-05-10');
-		//ISSUE HERE NEED TO FIX THIS! DOES NOT RETURN CORRECT UNAVAILABLE ROOMS
 		String sqlUnavailable = "SELECT * from booking WHERE (CheckInDate BETWEEN '" + checkDate.toString() 
 								+ "' AND '" + checkoutDate.toString() + "') OR (CheckOutDate BETWEEN '" 
 								+ checkDate.toString() + "' AND '" + checkoutDate.toString() + "')";
@@ -109,7 +109,7 @@ public class Booking {
 		return availability;
 	}
 	
-	//happy with this
+	//Gets a list of all existing bookings
 	public ArrayList<String> getExistingBookings() {
 		ArrayList<String> existingBookings = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
@@ -133,7 +133,7 @@ public class Booking {
 		return existingBookings;
 	}
 
-	//happy with this
+	//Gets a list of available booking that have not yet been checked in for today's date
 	public ArrayList<String> getBookingsToCheckIn() {
 		ArrayList<String> existingBookings = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
@@ -157,7 +157,7 @@ public class Booking {
 		return existingBookings;
 	}
 
-	//fairly happy
+	//Gets a list of bookings that are checked in that have not yet been charged for check out
 	public ArrayList<String> getBookingsToBill() {
 		ArrayList<String> bookingsToBill = new ArrayList<>();
 		conn = dbConnect.connectToDatabase();
@@ -182,7 +182,7 @@ public class Booking {
 		return bookingsToBill;
 	}
 
-	//happy with this
+	//gets next number available to set as unique primary key in database
 	public int getNextNo() {
 		conn = dbConnect.connectToDatabase();
 		String sql = "SELECT * FROM booking";
@@ -206,7 +206,7 @@ public class Booking {
 		return ++lastNo;
 	}
 
-	//happy with this
+	//Gets booking information for a specific booking
 	public String getBookingDetails(int bookingNo) {
 		String details = "";
 		conn = dbConnect.connectToDatabase();
@@ -229,5 +229,53 @@ public class Booking {
 			}
 		}
 		return details;
+	}
+
+	//Gets booking information to display on bill
+	public String[] getBookingToBill(int bookingNo) {
+		String[] details = new String[4];
+		conn = dbConnect.connectToDatabase();
+		String sql = "SELECT * FROM booking WHERE BookingNo=" + bookingNo;
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while(rs.next()) {
+				details[0] = rs.getString("CheckInDate");
+				details[1] = rs.getString("CheckOutDate");
+				details[2] = rs.getString("CustomerNo");
+				details[3] = rs.getString("RoomNo");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return details;
+	}
+
+	//Sets the CheckOutTotal of the bill amount in the database meaning the booking is now checked out
+	public void chargeBill(int no, double cost) {
+		conn = dbConnect.connectToDatabase();
+		String sql = "UPDATE booking SET CheckOutTotal = " + cost + ", CheckOutDate = '" 
+					+ LocalDate.now() + "' WHERE BookingNo = " + no;
+		try {
+			stmt = conn.createStatement();
+			stmt.executeUpdate(sql);
+			System.out.println("Check Out Complete!!");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
