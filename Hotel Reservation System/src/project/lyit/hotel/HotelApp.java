@@ -8,12 +8,18 @@ import java.util.HashMap;
 import java.util.Optional;
 import javafx.application.*;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
+
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.*;
 
 public class HotelApp extends Application {
@@ -39,7 +45,7 @@ public class HotelApp extends Application {
 	private CheckBox chkCustomer;
 
 	//BOTTOM PANE
-	private HBox bottomPane;
+	private VBox bottomPane;
 	private ComboBox<String> checkInBox;
 	private Button btCheckIn, btGenerateBill;
 	private ComboBox<String> cbReadyForCheckOut;
@@ -71,9 +77,22 @@ public class HotelApp extends Application {
 	private TextField txtBookingNo, txtCheckInDate, txtCheckOutDate, txtRoomDetails;
 	private ComboBox<String> cbCustomerOptions;
 	
+	private Text topLabel;
+	
+	
 	@Override
 	public void start(Stage primaryStage){
-
+	
+		StackPane topPane = new StackPane(topLabel = new Text("Hotel Reservation"));
+		//Text centerText = new Text("Hotel Reservation");
+		//BorderPane.setAlignment(centerText, Pos.TOP_CENTER);
+		topLabel.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 20));
+		topPane.setStyle("-fx-border-color: black");
+		
+//		Text centerText = new Text("Hotel Reservation");
+//		BorderPane.setAlignment(centerText, Pos.TOP_CENTER);
+		//centerText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 20));
+	
 		extra = new Extra();
 		booking = new Booking();
 		customer = new Customer();
@@ -84,13 +103,18 @@ public class HotelApp extends Application {
 		rightPane = getRightPane();
 		bottomPane = getBottomPane();
 		
+		 
+		
 		sceneLayout.setPrefSize(700,225);
 		BorderPane.setMargin(leftPane, new Insets(15,15,15,15));
 		BorderPane.setMargin(rightPane, new Insets(15,15,15,15));
-		sceneLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGREEN, CornerRadii.EMPTY, Insets.EMPTY)));
+		BorderPane.setMargin(bottomPane, new Insets(0,0,10,0));
+		sceneLayout.setBackground(new Background(new BackgroundFill(Color.CADETBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
 		Image image = new Image(getClass().getResourceAsStream("hotelIcon.png"));
 
-		sceneLayout.setTop(new Label("Hotel Reservation System"));
+		//sceneLayout.setTop(new Label("Hotel Reservation System"));
+		sceneLayout.setTop(topPane);
+		
 		sceneLayout.setLeft(leftPane);
 		sceneLayout.setRight(rightPane);
 		sceneLayout.setBottom(bottomPane);
@@ -99,21 +123,35 @@ public class HotelApp extends Application {
 		primaryStage.getIcons().add(image);
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Hotel Reservation System");
+		primaryStage.setResizable(false);
 		primaryStage.show();
 	}
 
 	//gets the right pane
 	private VBox getRightPane() {
 		VBox vbox = new VBox(5);
-		vbox.getChildren().addAll(getFirstRow(), getSecondRow());
+		Text rightText = new Text("Check Availibility");
+		BorderPane.setAlignment(rightText, Pos.TOP_RIGHT);
+		rightText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 15));
+		
+		
+		vbox.getChildren().addAll(rightText,getFirstRow(), getSecondRow());
 		return vbox;
 	}
 
 	//gets the bottom pane
-	private HBox getBottomPane() {
+	private VBox getBottomPane() {
 		HBox hbox = new HBox(5);
-		hbox.setPadding(new Insets(10, 20, 10, 10));
-
+		VBox vbox = new VBox(5);
+		
+		//hbox.setPadding(new Insets(10, 20, 10, 10));
+		//hbox.setPadding(new Insets(25, 230, 10, 120));
+		
+		Text bottomText = new Text("Check-In/Check-Out");
+		BorderPane.setAlignment(bottomText, Pos.BOTTOM_CENTER);
+		bottomText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 15));
+	
+		
 		btCheckIn = new Button("Check In");
 		btGenerateBill =  new Button("Generate Bill");
 		checkInBox = new ComboBox<String>();
@@ -153,8 +191,11 @@ public class HotelApp extends Application {
 			}
 		});
 		hbox.getChildren().addAll(checkInBox, btCheckIn, cbReadyForCheckOut, btGenerateBill);
-
-		return hbox;
+		vbox.getChildren().addAll(bottomText,hbox);
+		hbox.setAlignment(Pos.BOTTOM_CENTER);
+		vbox.setAlignment(Pos.BOTTOM_CENTER);
+		
+		return vbox;
 	}
 
 	//Generates the bill in a dialog box with all the info, once ok is clicked the cost 
@@ -293,6 +334,10 @@ public class HotelApp extends Application {
 		VBox vbox = new VBox(5);
 		HBox hbox = new HBox(5);
 		
+		Text leftText = new Text("Admin");
+		BorderPane.setAlignment(leftText, Pos.TOP_LEFT);
+		leftText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 15));
+		
 		rbRoom = new RadioButton("Room");
 		rbCustomer = new RadioButton("Customer");
 		rbExtra = new RadioButton("Extra");
@@ -320,7 +365,7 @@ public class HotelApp extends Application {
 	    });
 		
 		hbox.getChildren().addAll(btAdd, btEdit, btDelete);
-		vbox.getChildren().addAll(rbRoom, rbCustomer, rbExtra, hbox);
+		vbox.getChildren().addAll(leftText,rbRoom, rbCustomer, rbExtra, hbox);
 		
 		return vbox;
 	}
@@ -396,8 +441,15 @@ public class HotelApp extends Application {
 		btMakeBooking = new Button("Book a Room");
 		cbAvailable = new ComboBox<>();
 		chkCustomer = new CheckBox();
-		hbox.getChildren().addAll(cbAvailable, new Label("Existing Customer? "), chkCustomer, btMakeBooking);
-
+		Label existCust;
+		
+		hbox.getChildren().addAll(cbAvailable, existCust = new Label("Existing Customer? "), chkCustomer, btMakeBooking);
+		
+		HBox.setMargin(cbAvailable, new Insets(10,0,0,0));
+		HBox.setMargin(existCust, new Insets(10,0,0,0));
+		HBox.setMargin(chkCustomer, new Insets(10,0,0,0));
+		HBox.setMargin(btMakeBooking, new Insets(10,0,0,0));
+		
 		cbAvailable.getItems().add("Check Availability...");
 		cbAvailable.setValue("Check Availability...");
 
@@ -408,6 +460,7 @@ public class HotelApp extends Application {
 			cbAvailable.setValue("Check Availability...");
 			updateCheckIns();
 		});
+		
 		return hbox;
 	}
 	
@@ -443,22 +496,31 @@ public class HotelApp extends Application {
 				dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 				addACustomer();
 			} 
-			dialog = new Dialog<>();
-			dialog.setTitle("Making a Booking");
-			dialog.setHeaderText("Select customer to make the booking");
-			dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+			
+			if (customer.getExistingCustomers().size() > 0) {
+				dialog = new Dialog<>();
+				dialog.setTitle("Making a Booking");
+				dialog.setHeaderText("Select customer to make the booking");
+				dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-			GridPane grid = getBookingGrid();
-			dialog.getDialogPane().setContent(grid);
+				GridPane grid = getBookingGrid();
+				dialog.getDialogPane().setContent(grid);
 
-			//Booking only added if ok is clicked
-			Optional<ButtonType> buttonClicked = dialog.showAndWait();
-			if (buttonClicked.get() == ButtonType.OK) {
-				String[] roomDetails = cbAvailable.getValue().split(" ");
-				String[] custDetails = cbCustomerOptions.getValue().split(" ");
-				booking.addBooking(Integer.parseInt(txtBookingNo.getText()), txtCheckInDate.getText(), 
-									txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
-									Integer.parseInt(roomDetails[1]));
+				//Booking only added if ok is clicked
+				Optional<ButtonType> buttonClicked = dialog.showAndWait();
+				if (buttonClicked.get() == ButtonType.OK) {
+					String[] roomDetails = cbAvailable.getValue().split(" ");
+					String[] custDetails = cbCustomerOptions.getValue().split(" ");
+					booking.addBooking(Integer.parseInt(txtBookingNo.getText()), txtCheckInDate.getText(), 
+										txtCheckOutDate.getText(), Integer.parseInt(custDetails[1]), 
+										Integer.parseInt(roomDetails[1]));
+				}
+			} else {
+				Alert errorAlert = new Alert(AlertType.INFORMATION);
+		 		errorAlert.setTitle("No Customers To Book!");
+		 		errorAlert.setHeaderText("REQUEST NOT COMPLETE");
+		 		errorAlert.setContentText("There is no existing customers to book!");
+		 		errorAlert.showAndWait();
 			}
 		} else {
 			Alert errorAlert = new Alert(AlertType.INFORMATION);
