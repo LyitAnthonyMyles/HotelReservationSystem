@@ -215,8 +215,8 @@ public class Booking {
 			stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(sql);
 			while(rs.next()) {
-				details += "Booking: " + rs.getString("BookingNo") + ", Room Number: " 
-				+ rs.getInt("RoomNo");
+				details += "Room: " + rs.getString("RoomNo") + ", Booking: " 
+				+ rs.getInt("BookingNo");
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

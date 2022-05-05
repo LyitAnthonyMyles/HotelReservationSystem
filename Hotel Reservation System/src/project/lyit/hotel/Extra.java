@@ -137,6 +137,39 @@ public class Extra {
 		}
 		return existingExtras;
 	}
+	
+	//Maybe get this to work......
+	public ArrayList<Integer> getActiveExtraList() {
+		ArrayList<Integer> activeBookings = new ArrayList<>();
+		ArrayList<Integer> activeExtras = new ArrayList<>();
+		conn = dbConnect.connectToDatabase();
+		String sqlBookings = "SELECT * FROM booking WHERE CheckIn = true AND CheckOutTotal = 0";
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sqlBookings);
+			while(rs.next()) {
+				activeBookings.add(rs.getInt("BookingNo"));
+			}
+			for (int booking : activeBookings) {
+				String sqlExtras = "SELECT * FROM extra WHERE BookingNo = " + booking;
+				stmt = conn.createStatement();
+				ResultSet rs2 = stmt.executeQuery(sqlExtras);
+				while(rs2.next()) {
+					activeExtras.add(rs2.getInt("ExtraNo"));
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				stmt.close();
+				dbConnect.closeDatabaseConnection(conn);
+			} catch (SQLException e) {
+				System.out.println("Database error!");
+			}
+		}
+		return activeExtras;
+	}
 
 	//Gets extra details of a specific extra
 	public String[] getExtraDetails(int extraNo) {
@@ -176,8 +209,8 @@ public class Extra {
 			ResultSet rs = stmt.executeQuery(sql);
 			while(rs.next()) {
 				extras.add(rs.getString("Qty") + " x " + rs.getString("Type") 
-							+ " @ â‚¬" + df.format(rs.getDouble("Cost")) 
-							+ " Total: â‚¬" + df.format(rs.getDouble("Total")));
+							+ " @ €" + df.format(rs.getDouble("Cost")) 
+							+ " Total: €" + df.format(rs.getDouble("Total")));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

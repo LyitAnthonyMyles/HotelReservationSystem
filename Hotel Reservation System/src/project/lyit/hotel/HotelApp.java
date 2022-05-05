@@ -38,7 +38,7 @@ public class HotelApp extends Application {
 
 	//RIGHT PANE
 	private VBox rightPane;
-	private ComboBox<String> cbAvailable;
+	private ComboBox<String> cbAvailable, cbRoomChoice;
 	private Button btMakeBooking;
 	private DatePicker checkInDate;
     private DatePicker checkOutDate;
@@ -59,7 +59,7 @@ public class HotelApp extends Application {
 
 	//ROOM
 	private ComboBox<Integer> cbRoomNos; 
-	private ComboBox<String> cbRoomType; 
+	private ComboBox<String> cbRoomType;
 	private ComboBox<Boolean> cbDecomm;
 
 	//CUSTOMER
@@ -84,14 +84,8 @@ public class HotelApp extends Application {
 	public void start(Stage primaryStage){
 	
 		StackPane topPane = new StackPane(topLabel = new Text("Hotel Reservation"));
-		//Text centerText = new Text("Hotel Reservation");
-		//BorderPane.setAlignment(centerText, Pos.TOP_CENTER);
 		topLabel.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 20));
 		topPane.setStyle("-fx-border-color: black");
-		
-//		Text centerText = new Text("Hotel Reservation");
-//		BorderPane.setAlignment(centerText, Pos.TOP_CENTER);
-		//centerText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 20));
 	
 		extra = new Extra();
 		booking = new Booking();
@@ -103,8 +97,6 @@ public class HotelApp extends Application {
 		rightPane = getRightPane();
 		bottomPane = getBottomPane();
 		
-		 
-		
 		sceneLayout.setPrefSize(700,225);
 		BorderPane.setMargin(leftPane, new Insets(15,15,15,15));
 		BorderPane.setMargin(rightPane, new Insets(15,15,15,15));
@@ -112,7 +104,6 @@ public class HotelApp extends Application {
 		sceneLayout.setBackground(new Background(new BackgroundFill(Color.CADETBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
 		Image image = new Image(getClass().getResourceAsStream("hotelIcon.png"));
 
-		//sceneLayout.setTop(new Label("Hotel Reservation System"));
 		sceneLayout.setTop(topPane);
 		
 		sceneLayout.setLeft(leftPane);
@@ -134,23 +125,18 @@ public class HotelApp extends Application {
 		BorderPane.setAlignment(rightText, Pos.TOP_RIGHT);
 		rightText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 15));
 		
-		
-		vbox.getChildren().addAll(rightText,getFirstRow(), getSecondRow());
+		vbox.getChildren().addAll(rightText, getFirstRow(), getSecondRow());
 		return vbox;
 	}
 
 	//gets the bottom pane
 	private VBox getBottomPane() {
-		HBox hbox = new HBox(5);
+		HBox hbox = new HBox(10);
 		VBox vbox = new VBox(5);
-		
-		//hbox.setPadding(new Insets(10, 20, 10, 10));
-		//hbox.setPadding(new Insets(25, 230, 10, 120));
 		
 		Text bottomText = new Text("Check-In/Check-Out");
 		BorderPane.setAlignment(bottomText, Pos.BOTTOM_CENTER);
 		bottomText.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 15));
-	
 		
 		btCheckIn = new Button("Check In");
 		btGenerateBill =  new Button("Generate Bill");
@@ -190,6 +176,7 @@ public class HotelApp extends Application {
 				errorAlert.showAndWait();
 			}
 		});
+		
 		hbox.getChildren().addAll(checkInBox, btCheckIn, cbReadyForCheckOut, btGenerateBill);
 		vbox.getChildren().addAll(bottomText,hbox);
 		hbox.setAlignment(Pos.BOTTOM_CENTER);
@@ -229,7 +216,7 @@ public class HotelApp extends Application {
 		GridPane grid = new GridPane();
 		grid.setHgap(10);
 		grid.setVgap(10);
-		grid.setPadding(new Insets(20, 150, 10, 10));
+		grid.setPadding(new Insets(20, 30, 20, 30));
 
 		//TEXTFIELDS!
 		TextField txtBooking = new TextField();
@@ -249,11 +236,11 @@ public class HotelApp extends Application {
 		txtType.setEditable(false);
 
 		TextField txtCostPerNight = new TextField();
-		txtCostPerNight.setText("â‚¬" + df.format(roomCost));
+		txtCostPerNight.setText("€" + df.format(roomCost));
 		txtCostPerNight.setEditable(false);
 
 		TextField txtTotalForRoom = new TextField();
-		txtTotalForRoom.setText("â‚¬" + df.format(nights * roomCost));
+		txtTotalForRoom.setText("€" + df.format(nights * roomCost));
 		txtTotalForRoom.setEditable(false);
 
 		//Adding to the grid
@@ -284,13 +271,13 @@ public class HotelApp extends Application {
 			grid.add(new Label("Extras: "), 0, 5);
 			grid.add(taExtras, 1, 5);
 			grid.add(new Label("Extra Total: "), 0, 6);
-			grid.add(new TextField("â‚¬" + df.format(totalExtraCost)), 1, 6);
+			grid.add(new TextField("€" + df.format(totalExtraCost)), 1, 6);
 		}
 
 		//Adds overall cost to the grid
 		overallCost = (nights * roomCost) + totalExtraCost;
 		TextField txtOverallTotal = new TextField();
-		txtOverallTotal.setText("â‚¬" + df.format(overallCost));
+		txtOverallTotal.setText("€" + df.format(overallCost));
 
 		grid.add(new Label("Total Cost of Stay: "), 0, 7);
 		grid.add(txtOverallTotal, 1, 7);
@@ -367,32 +354,34 @@ public class HotelApp extends Application {
 		hbox.getChildren().addAll(btAdd, btEdit, btDelete);
 		vbox.getChildren().addAll(leftText,rbRoom, rbCustomer, rbExtra, hbox);
 		
+		VBox.setMargin(hbox, new Insets(10,0,0,0));
+		
 		return vbox;
 	}
 
 	//gets the first row of the right pane
-	private VBox getFirstRow() {
-		VBox vbox = new VBox(5);
-		HBox h1 = new HBox(5);
-		HBox h2 = new HBox(5);
+	private GridPane getFirstRow() {
+		GridPane rowGrid = new GridPane();
+		rowGrid.setHgap(10);
+		rowGrid.setVgap(10);
 	
 		Button btCheck = new Button("Check Availability");
 		checkInDate = new DatePicker();
 		checkOutDate = new DatePicker();
-		cbRoomType = new ComboBox<>();
+		cbRoomChoice = new ComboBox<>();
 	 
 		HashMap<String, Double> roomOptions = room.getRoomOpts();
 		checkInDate.setValue(LocalDate.now());
 		checkOutDate.setValue(checkInDate.getValue().plusDays(1));
-		cbRoomType.getItems().addAll(roomOptions.keySet());
-		cbRoomType.setValue("Single");
+		cbRoomChoice.getItems().addAll(roomOptions.keySet());
+		cbRoomChoice.setValue("Single");
 		
-		h1.getChildren().add(new Label("Check In Date:"));
-		h1.getChildren().add(checkInDate);
-		h2.getChildren().add(new Label("Check Out Date:"));
-		h2.getChildren().add(checkOutDate);
-		h1.getChildren().add(cbRoomType);
-		h2.getChildren().add(btCheck);
+		rowGrid.add(new Label("Check In Date:"), 0, 0);
+		rowGrid.add(checkInDate, 1, 0);
+		rowGrid.add(cbRoomChoice, 2, 0);
+		rowGrid.add(new Label("Check Out Date:"), 0, 1);
+		rowGrid.add(checkOutDate, 1, 1);
+		rowGrid.add(btCheck, 2, 1);
 		
 		btCheck.setOnAction(e -> {
 			checkAvailibility();
@@ -430,9 +419,8 @@ public class HotelApp extends Application {
 				}
 			});
 		});
-		vbox.getChildren().addAll(h1, h2);
-
-		return vbox;
+	
+		return rowGrid;
 	}
 
 	//gets the second row of the right pane
@@ -469,7 +457,7 @@ public class HotelApp extends Application {
 		cbAvailable.getItems().clear();
 		LocalDate checkDate = checkInDate.getValue();
 		LocalDate checkoutDate = checkOutDate.getValue();
-		String roomType = cbRoomType.getValue();
+		String roomType = cbRoomChoice.getValue();
 		
 		ArrayList<String> availableToBook = booking.getBookingAvailability(checkDate, checkoutDate, roomType);
 		if (availableToBook.size() > 0) {
@@ -536,7 +524,7 @@ public class HotelApp extends Application {
 		GridPane bookingGrid = new GridPane();
 		bookingGrid.setHgap(10);
 		bookingGrid.setVgap(10);
-		bookingGrid.setPadding(new Insets(20, 150, 10, 10));
+		bookingGrid.setPadding(new Insets(20, 30, 20, 30));
 
 		txtBookingNo = new TextField();
 		txtBookingNo.setText("" + booking.getNextNo());
@@ -603,7 +591,7 @@ public class HotelApp extends Application {
 		GridPane roomGrid = new GridPane();
 		roomGrid.setHgap(10);
 		roomGrid.setVgap(10);
-		roomGrid.setPadding(new Insets(20, 150, 10, 10));
+		roomGrid.setPadding(new Insets(20, 30, 20, 30));
 
 		//COMBO BOXES - Gets avalable room using the method from the room class
 		HashMap<String, Double> roomOptions = room.getRoomOpts();
@@ -645,7 +633,7 @@ public class HotelApp extends Application {
 		GridPane custGrid = new GridPane();
 		custGrid.setHgap(10);
 		custGrid.setVgap(10);
-		custGrid.setPadding(new Insets(20, 150, 10, 10));
+		custGrid.setPadding(new Insets(20, 30, 20, 30));
 		
 		//TEXT FIELDS
 		first = new TextField();
@@ -700,7 +688,7 @@ public class HotelApp extends Application {
 		GridPane extraGrid = new GridPane();
 		extraGrid.setHgap(10);
 		extraGrid.setVgap(10);
-		extraGrid.setPadding(new Insets(20, 150, 10, 10));
+		extraGrid.setPadding(new Insets(20, 30, 20, 30));
 		
 		//Using map to store key:value pairs of extra and cost and filling 
 		//combobox with the keys from map.
@@ -900,7 +888,7 @@ public class HotelApp extends Application {
 	//Brings up the edit a customer dialog box and passes the values as parameters
 	//once the ok button is clicked
 	private void editAnExtra() {
-		ArrayList<Integer> extras = extra.getExistingExtras();
+		ArrayList<Integer> extras = extra.getActiveExtraList();
 		if(extras.size() > 0) {
 			GridPane grid = getExtraGrid();
 			cbExtras = new ComboBox<>();
@@ -919,7 +907,7 @@ public class HotelApp extends Application {
 			cost.setEditable(false);
 			total.setText(details[3]);
 			total.setEditable(false);
-			bookingNo.setText(details[4]);
+			bookingNo.setText(booking.getBookingDetails(Integer.parseInt(details[4])));
 			bookingNo.setEditable(false);
 
 			//CHANGES VALUES WHEN COMBOBOX SELECTION CHANGES
@@ -929,7 +917,7 @@ public class HotelApp extends Application {
 				cbQty.setValue(Integer.parseInt(detailsChanged[1]));
 				cost.setText(detailsChanged[2]);
 				total.setText(detailsChanged[3]);
-				bookingNo.setText(detailsChanged[4]);
+				bookingNo.setText(booking.getBookingDetails(Integer.parseInt(detailsChanged[4])));
 			});
 
 			//WHEN TYPE SELECTION CHANGES SO DOES COST AND TOTAL
@@ -952,9 +940,10 @@ public class HotelApp extends Application {
 			dialog.getDialogPane().setContent(grid);
 			Optional<ButtonType> buttonClicked = dialog.showAndWait();
 			if (buttonClicked.get() == ButtonType.OK) {
+				String[] booking = bookingNo.getText().split(" ");
 				extra.editExtra(cbExtras.getValue(), cbExtraType.getValue(), cbQty.getValue(), 
 							Double.parseDouble(cost.getText()), Double.parseDouble(total.getText()), 
-							Integer.parseInt(bookingNo.getText()));
+							Integer.parseInt(booking[3]));
 			}
 		//Dialog will not display if there are no existing rooms to edit and a warning will appear
 		} else {
@@ -986,7 +975,7 @@ public class HotelApp extends Application {
 			deleteACustomer();
 			break;
 		case "Extra":
-			dialog.setHeaderText("Select the extra you wish to delete.");
+			dialog.setHeaderText("Select the extra you wish to delete from booking.");
 			deleteAnExtra();
 			break;
 		}
@@ -1000,7 +989,7 @@ public class HotelApp extends Application {
 			GridPane grid = new GridPane();
 			grid.setHgap(10);
 			grid.setVgap(10);
-			grid.setPadding(new Insets(20, 150, 10, 10));
+			grid.setPadding(new Insets(20, 30, 20, 30));
 
 			//COMBOBOX WITH EXISTING ROOM NUMBERS
 			ComboBox<Integer> cbRooms = new ComboBox<>();
@@ -1101,12 +1090,13 @@ public class HotelApp extends Application {
 	//Brings up the delete an extra dialog box and calls the delete extra method from the extra
 	//class with the extraNo passed as a parameter
 	private void deleteAnExtra() {
-		ArrayList<Integer> existingExtras = extra.getExistingExtras();
+		ArrayList<Integer> existingExtras = extra.getActiveExtraList();
 		if (existingExtras.size() > 0) {
 			GridPane grid = new GridPane();
 			grid.setHgap(10);
 			grid.setVgap(10);
-			grid.setPadding(new Insets(20, 150, 10, 10));
+			grid.setPadding(new Insets(20, 40, 20, 30));
+			
 			ComboBox<Integer> cbExtras = new ComboBox<>();
 			TextField txtType = new TextField();
 			txtType.setEditable(false);
