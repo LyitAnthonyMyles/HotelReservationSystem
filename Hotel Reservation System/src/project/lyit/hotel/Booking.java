@@ -81,7 +81,7 @@ public class Booking {
 			String sqlAvailable = "SELECT * FROM room WHERE RoomType= '" + type + "' AND Decommissioned = false";
 			rs = stmt.executeQuery(sqlAvailable);
 			while (rs.next()) {
-				availability.add("Room: " + rs.getInt("RoomNo") + " Room Type: " + rs.getString("RoomType"));
+				availability.add("Room: " + rs.getInt("RoomNo") + " Type: " + rs.getString("RoomType"));
 			}
 
 			if (unavailableNums.size() > 0) {

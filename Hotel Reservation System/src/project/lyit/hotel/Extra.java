@@ -138,7 +138,7 @@ public class Extra {
 		return existingExtras;
 	}
 	
-	//Maybe get this to work......
+	//Gets list of extras on active bookings
 	public ArrayList<Integer> getActiveExtraList() {
 		ArrayList<Integer> activeBookings = new ArrayList<>();
 		ArrayList<Integer> activeExtras = new ArrayList<>();
@@ -159,7 +159,7 @@ public class Extra {
 				}
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			System.out.println("Database error");
 		} finally {
 			try {
 				stmt.close();

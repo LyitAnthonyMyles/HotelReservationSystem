@@ -226,6 +226,14 @@ public class HotelApp extends Application {
 		TextField txtCustomer = new TextField();
 		txtCustomer.setText("" + customerInfo[0] + " " + customerInfo[1]);
 		txtCustomer.setEditable(false);
+		
+		TextField txtCheckIn = new TextField();
+		txtCheckIn.setText("" + chkIn);
+		txtCheckIn.setEditable(false);
+		
+		TextField txtCheckOut = new TextField();
+		txtCheckOut.setText("" + chkOut);
+		txtCheckOut.setEditable(false);
 
 		TextField nightsStayed = new TextField();
 		nightsStayed.setText("" + nights);
@@ -248,12 +256,16 @@ public class HotelApp extends Application {
 		grid.add(txtBooking, 1, 0);
 		grid.add(new Label("Customer Name: "), 0, 1);
 		grid.add(txtCustomer, 1, 1);
-		grid.add(new Label("Nights Stayed: "), 0, 2);
-		grid.add(nightsStayed, 1, 2);
-		grid.add(new Label(roomInfo[0] + " Room Cost Per Night: "), 0, 3);
-		grid.add(txtCostPerNight, 1, 3);
-		grid.add(new Label("Total for " + nights + " nights: "), 0, 4);
-		grid.add(txtTotalForRoom, 1, 4);
+		grid.add(new Label("Check In Date: "), 0, 2);
+		grid.add(txtCheckIn, 1, 2);
+		grid.add(new Label("Check Out Date: "), 0, 3);
+		grid.add(txtCheckOut, 1, 3);
+		grid.add(new Label("Nights Stayed: "), 0, 4);
+		grid.add(nightsStayed, 1, 4);
+		grid.add(new Label(roomInfo[0] + " Room Cost Per Night: "), 0, 5);
+		grid.add(txtCostPerNight, 1, 5);
+		grid.add(new Label("Total for " + nights + " nights: "), 0, 6);
+		grid.add(txtTotalForRoom, 1, 6);
 		
 		//Checks if there are any extras present for the booking and if so adds them
 		//to the grid
@@ -268,10 +280,10 @@ public class HotelApp extends Application {
 			taExtras.setEditable(false);
 			taExtras.setPrefColumnCount(20);
 			taExtras.setPrefRowCount(4);
-			grid.add(new Label("Extras: "), 0, 5);
-			grid.add(taExtras, 1, 5);
-			grid.add(new Label("Extra Total: "), 0, 6);
-			grid.add(new TextField("€" + df.format(totalExtraCost)), 1, 6);
+			grid.add(new Label("Extras: "), 0, 7);
+			grid.add(taExtras, 1, 7);
+			grid.add(new Label("Extra Total: "), 0, 8);
+			grid.add(new TextField("€" + df.format(totalExtraCost)), 1, 8);
 		}
 
 		//Adds overall cost to the grid
@@ -279,8 +291,8 @@ public class HotelApp extends Application {
 		TextField txtOverallTotal = new TextField();
 		txtOverallTotal.setText("€" + df.format(overallCost));
 
-		grid.add(new Label("Total Cost of Stay: "), 0, 7);
-		grid.add(txtOverallTotal, 1, 7);
+		grid.add(new Label("Total Cost of Stay: "), 0, 9);
+		grid.add(txtOverallTotal, 1, 9);
 
 		//displays dialog and charges the bill if ok is clicked
 		dialog.getDialogPane().setContent(grid);
@@ -461,8 +473,11 @@ public class HotelApp extends Application {
 		
 		ArrayList<String> availableToBook = booking.getBookingAvailability(checkDate, checkoutDate, roomType);
 		if (availableToBook.size() > 0) {
-			cbAvailable.getItems().addAll(availableToBook);
-			cbAvailable.setValue(availableToBook.get(0));
+			for (String available : availableToBook) {
+				cbAvailable.getItems().add(available + " Cost: €" + room.getRoomCost(roomType));
+			}
+//			cbAvailable.getItems().addAll(availableToBook);
+			cbAvailable.setValue(availableToBook.get(0) + " Cost: €" + room.getRoomCost(roomType));
 		} else {
 			cbAvailable.getItems().add("No Rooms Available!");
 			cbAvailable.setValue("No Rooms Available!");
